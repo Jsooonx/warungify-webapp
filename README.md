@@ -1,73 +1,76 @@
-# React + TypeScript + Vite
+# WA Order Manager
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+An ultra-dense, high-performance operational tracking dashboard and order management system for WhatsApp-based sellers. Specially designed to streamline post-sale workflows, reduce manual copy-paste fatigue, and track customer lifecycles in real-time.
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Features
 
-## React Compiler
+* **Secure Workspace Integration** – Split-pane authentication powered by Supabase. Supports local browser-based guest storage with one-click migration to cloud databases upon registration.
+* **Operational Dashboard** – High-density KPIs overview (Total Orders, Pending Payments, Processing, Packing, Shipped, Done) with automated **"Need Attention"** widgets highlighting stuck or incomplete orders.
+* **Dense Order Management Logs** – Fast, searchable, and sortable database view of order items. Direct in-row quick-status changes, editing, deletion, and quick-action WhatsApp prompt integrations.
+* **Automated Customer CRM** – Compiled automatically from order logs. Keep track of customer metrics like purchase history, total lifetime spend, phone numbers, and detailed order logs within a flyout sliding drawer.
+* **WhatsApp Template Generator** – Instantly populated customer notification templates (Payment Confirmation, Shipping/Receipt Alert, Processing Alert) that copy to clipboard and open WhatsApp Web/Mobile chat in one click.
+* **Micro-Animations & Transitions** – Built with fluid loaders, high-fidelity responsive layouts, custom toasts, and viewport-aware transitions using Lenis and CSS utilities.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+---
 
-## Expanding the ESLint configuration
+## Technology Stack
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+* **Frontend Framework:** [React 19](https://react.dev/) + [Vite](https://vite.dev/) + [TypeScript](https://www.typescriptlang.org/)
+* **Styling Engine:** [Tailwind CSS v4](https://tailwindcss.com/)
+* **Database & Auth:** [Supabase SDK](https://supabase.com/)
+* **Icons:** [Lucide React](https://lucide.dev/)
+* **Animations & Scrolling:** [Lenis Smooth Scroll](https://lenis.darkroom.engineering/)
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+---
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+## Getting Started
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+### 1. Prerequisites
+Make sure you have Node.js installed (v18+ recommended) along with `npm` or `yarn`.
+
+### 2. Environment Setup
+Create a `.env` file in the root directory based on `.env.example`:
+```env
+VITE_SUPABASE_URL=your_supabase_project_url
+VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+### 3. Installation
+Install the project dependencies:
+```bash
+npm install
+```
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+### 4. Development Server
+Run the local dev server with Hot Module Replacement (HMR):
+```bash
+npm run dev
+```
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+### 5. Production Build
+Build the optimized production assets:
+```bash
+npm run build
+```
+
+---
+
+## Project Structure
+
+```text
+├── _specs/              # Product and technical specifications
+├── public/              # Static assets and icons
+├── src/
+│   ├── components/      # Reusable view components (Dashboard, Orders, Form, CRM, Auth, Sidebar)
+│   ├── hooks/           # Custom React hooks (state management, hash router, auth session)
+│   ├── services/        # Supabase API handlers and client configurations
+│   ├── types/           # TypeScript interfaces and type definitions
+│   ├── App.tsx          # Main application router and state coordinator
+│   ├── index.css        # Tailwind configurations and design tokens
+│   └── main.tsx         # Application entry point
+├── eslint.config.js     # Code quality and style linter configurations
+├── vite.config.ts       # Vite compilation settings
+└── tsconfig.json        # TypeScript configurations
 ```
