@@ -10,6 +10,7 @@ import customersImg from '../assets/customers.png';
 import bottleneckImg from '../assets/dashboard_bottleneck.png';
 import orderFormImg from '../assets/orderform.png';
 import todaysWorkImg from '../assets/dashboard_todayswork.png';
+import backgroundHeroImg from '../assets/background_hero.png';
 
 interface LandingPageViewProps {
   onGetStartedClick: () => void;
@@ -267,54 +268,60 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onGetStartedCl
         </div>
       </header>
 
-      {/* Hero Section */}
-      <section className="pt-32 pb-16 px-6 text-center space-y-8 max-w-4xl mx-auto">
-        {/* Announce Badge */}
-        <div className="hero-entry hero-entry-1 hero-badge-shimmer inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-50 border border-slate-100/80 text-[10px] font-semibold text-slate-600">
-          <span className="px-1.5 py-0.5 rounded-full bg-emerald-500 text-white font-extrabold text-[8px] uppercase tracking-wide">{t.new}</span>
-          {t.releaseAnnounce}
-        </div>
-
-        {/* Main Hero Headline */}
-        <div className="space-y-4">
-          <h1 className="hero-entry hero-entry-2 text-4xl sm:text-6xl font-extrabold text-slate-900 tracking-tight leading-[1.1] max-w-2xl mx-auto">
-            {t.heroTitle}
-          </h1>
-          <p className="hero-entry hero-entry-3 text-slate-500 text-sm sm:text-base leading-relaxed max-w-xl mx-auto font-medium">
-            {t.heroSubtitle}
-          </p>
-        </div>
-
-        {/* CTA Buttons */}
-        <div className="hero-entry hero-entry-4 flex items-center justify-center gap-3">
-          <button 
-            onClick={onGetStartedClick}
-            className="group h-10 px-6 rounded-lg border border-transparent bg-slate-950 hover:bg-white text-white hover:text-slate-950 text-xs font-bold flex items-center gap-2 transition-all duration-500 shadow-md shadow-slate-900/10 cursor-pointer"
-          >
-            <RollingText>{t.getStarted}</RollingText>
-            <ArrowRight className="w-3.5 h-3.5 transition-transform duration-500 group-hover:translate-x-1" />
-          </button>
-          <a 
-            href="#features"
-            className="group h-10 px-6 rounded-lg border border-transparent bg-white hover:bg-slate-950 text-slate-700 hover:text-white text-xs font-bold flex items-center justify-center transition-all duration-500 cursor-pointer shadow-sm"
-          >
-            <RollingText>{t.learnMore}</RollingText>
-          </a>
-        </div>
-      </section>
-
-      {/* Showcase Image Preview */}
-      <section className="px-6 sm:px-12 max-w-6xl mx-auto pb-24">
-        <div className="hero-showcase-rise">
-          <div className="hero-showcase-float relative rounded-2xl border border-slate-200 bg-white shadow-2xl overflow-hidden p-2 sm:p-3">
-            <img 
-              src={dashboardImg} 
-              alt="WarungFlow Dashboard Preview" 
-              className="w-full h-auto object-cover rounded-xl border border-slate-100"
-            />
+      {/* Hero Section Background Wrapper */}
+      <div 
+        className="w-full bg-cover bg-center bg-no-repeat"
+        style={{ backgroundImage: `url(${backgroundHeroImg})` }}
+      >
+        {/* Hero Section */}
+        <section className="pt-32 pb-16 px-6 text-center space-y-8 max-w-4xl mx-auto">
+          {/* Announce Badge */}
+          <div className="hero-entry hero-entry-1 hero-badge-shimmer inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-50 border border-slate-100/80 text-[10px] font-semibold text-slate-600">
+            <span className="px-1.5 py-0.5 rounded-full bg-emerald-500 text-white font-extrabold text-[8px] uppercase tracking-wide">{t.new}</span>
+            {t.releaseAnnounce}
           </div>
-        </div>
-      </section>
+
+          {/* Main Hero Headline */}
+          <div className="space-y-4">
+            <h1 className="hero-entry hero-entry-2 text-4xl sm:text-6xl font-extrabold text-slate-900 tracking-tight leading-[1.1] max-w-2xl mx-auto">
+              {t.heroTitle}
+            </h1>
+            <p className="hero-entry hero-entry-3 text-slate-500 text-sm sm:text-base leading-relaxed max-w-xl mx-auto font-medium">
+              {t.heroSubtitle}
+            </p>
+          </div>
+
+          {/* CTA Buttons */}
+          <div className="hero-entry hero-entry-4 flex items-center justify-center gap-3">
+            <button 
+              onClick={onGetStartedClick}
+              className="group h-10 px-6 rounded-lg border border-transparent bg-slate-950 hover:bg-white text-white hover:text-slate-950 text-xs font-bold flex items-center gap-2 transition-all duration-500 shadow-md shadow-slate-900/10 cursor-pointer"
+            >
+              <RollingText>{t.getStarted}</RollingText>
+              <ArrowRight className="w-3.5 h-3.5 transition-transform duration-500 group-hover:translate-x-1" />
+            </button>
+            <a 
+              href="#features"
+              className="group h-10 px-6 rounded-lg border border-transparent bg-white hover:bg-slate-950 text-slate-700 hover:text-white text-xs font-bold flex items-center justify-center transition-all duration-500 cursor-pointer shadow-sm"
+            >
+              <RollingText>{t.learnMore}</RollingText>
+            </a>
+          </div>
+        </section>
+
+        {/* Showcase Image Preview */}
+        <section className="px-6 sm:px-12 max-w-6xl mx-auto pb-24">
+          <div className="hero-showcase-rise">
+            <div className="hero-showcase-float relative rounded-2xl border border-slate-200 bg-white shadow-2xl overflow-hidden p-2 sm:p-3">
+              <img 
+                src={dashboardImg} 
+                alt="WarungFlow Dashboard Preview" 
+                className="w-full h-auto object-cover rounded-xl border border-slate-100"
+              />
+            </div>
+          </div>
+        </section>
+      </div>
 
       {/* Feature Section */}
       <section id="features" className="py-24 bg-slate-50/50 border-t border-slate-100">
