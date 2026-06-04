@@ -182,6 +182,12 @@ function App() {
   const orderToEdit = (path === 'orders/edit' && params.id)
     ? (orders.find((o) => o.id === params.id) || null)
     : null;
+  const displayName = (
+    typeof user?.user_metadata?.full_name === 'string' && user.user_metadata.full_name.trim()
+      ? user.user_metadata.full_name.trim()
+      : user?.email?.split('@')[0]
+  ) || 'Workspace User';
+  const displayEmail = user?.email || 'Account active';
 
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [lastChangedOrder, setLastChangedOrder] = useState<{ id: string; kind: ChangeKind } | null>(null);
@@ -402,6 +408,8 @@ function App() {
         setActiveTab={(tab) => navigate(tab)}
         onCreateOrderClick={handleCreateOrderClick}
         onLogoutClick={handleLogout}
+        userName={displayName}
+        userEmail={displayEmail}
       />
       <main className="flex-1 flex flex-col min-w-0 bg-slate-50/50">{renderView()}</main>
       {(isDataLoading || dataError || authError || canImportLocalOrders) && (

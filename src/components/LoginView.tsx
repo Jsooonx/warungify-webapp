@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { ArrowLeft, CheckCircle, Key, LogIn, Mail, Sparkles, UserPlus } from 'lucide-react';
+import { ArrowLeft, CheckCircle, Database, Key, LogIn, Mail, ShieldCheck, Sparkles, UserPlus } from 'lucide-react';
 import { RollingText } from './RollingText';
 import {
   sendPasswordReset,
@@ -10,6 +10,7 @@ import {
 import { isSupabaseConfigured } from '../lib/supabaseClient';
 
 type AuthMode = 'login' | 'signup' | 'forgot' | 'reset';
+const PASSWORD_RECOVERY_KEY = 'warungflow_password_recovery';
 
 interface LoginViewProps {
   onLoginSuccess: (email: string) => void;
@@ -19,7 +20,7 @@ interface LoginViewProps {
 
 export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess, onPasswordResetComplete, onBackToLanding }) => {
   const initialMode = useMemo<AuthMode>(() => (
-    window.location.hash.includes('mode=reset') || sessionStorage.getItem('wa_order_manager_password_recovery') === 'true' ? 'reset' : 'login'
+    window.location.hash.includes('mode=reset') || sessionStorage.getItem(PASSWORD_RECOVERY_KEY) === 'true' ? 'reset' : 'login'
   ), []);
   const [mode, setMode] = useState<AuthMode>(initialMode);
   const [fullName, setFullName] = useState('');
@@ -154,14 +155,18 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess, onPassword
 
           <div className="space-y-3 pt-4 border-t border-slate-800">
             <div className="flex items-start gap-3 text-slate-300 text-xs">
-              <div className="p-1 rounded-md bg-emerald-500/10 text-emerald-400 mt-0.5">✓</div>
+              <div className="p-1 rounded-md bg-emerald-500/10 text-emerald-400 mt-0.5">
+                <ShieldCheck className="w-3 h-3" />
+              </div>
               <div>
                 <p className="font-semibold text-slate-200">Email verified account</p>
                 <p className="text-slate-400 mt-0.5">Signup publik dengan verifikasi email dan recovery password.</p>
               </div>
             </div>
             <div className="flex items-start gap-3 text-slate-300 text-xs">
-              <div className="p-1 rounded-md bg-emerald-500/10 text-emerald-400 mt-0.5">↗</div>
+              <div className="p-1 rounded-md bg-emerald-500/10 text-emerald-400 mt-0.5">
+                <Database className="w-3 h-3" />
+              </div>
               <div>
                 <p className="font-semibold text-slate-200">User-owned database</p>
                 <p className="text-slate-400 mt-0.5">Orders dan templates dipisahkan per akun dengan Supabase RLS.</p>
@@ -230,7 +235,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess, onPassword
                   <input
                     type="email"
                     required
-                    placeholder="name@company.com"
+                    placeholder="owner@warungflow.app"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     disabled={isLoading}
@@ -259,7 +264,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess, onPassword
                   <input
                     type="password"
                     required
-                    placeholder="••••••••"
+                    placeholder="********"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     disabled={isLoading}
@@ -275,7 +280,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess, onPassword
                 <input
                   type="password"
                   required
-                  placeholder="••••••••"
+                  placeholder="********"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   disabled={isLoading}
@@ -319,7 +324,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess, onPassword
           <div className="p-3.5 bg-slate-50 border border-slate-100 rounded-xl flex items-start gap-3 select-none">
             <Sparkles className="w-4 h-4 text-emerald-600 mt-0.5 shrink-0" />
             <p className="text-[11px] leading-relaxed text-slate-500 font-medium">
-              Demo credentials sudah dimatikan. Gunakan akun Supabase sungguhan agar data order tersimpan di database per user.
+              Gunakan akun yang sudah diverifikasi agar data order tersimpan di database per user.
             </p>
           </div>
         </div>

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import type { Template } from '../types';
-import { MessageSquare, Clipboard, Check, Info } from 'lucide-react';
+import { MessageSquare, Clipboard, Check, Info, Lightbulb } from 'lucide-react';
 import { RollingText } from './RollingText';
 
 interface TemplatesViewProps {
@@ -19,18 +19,18 @@ export const TemplatesView: React.FC<TemplatesViewProps> = ({ templates, onTempl
     });
   };
 
-  // Mock template injection preview data
-  const mockPreviewData = {
-    nama: 'Andi Wijaya',
+  // Template variable preview data
+  const previewData = {
+    nama: 'Pelanggan Baru',
     total: '95.000',
-    tracking: 'JNE82910398'
+    tracking: 'RESI82910398'
   };
 
   const getPreviewText = (body: string) => {
     return body
-      .replace(/{nama}/g, mockPreviewData.nama)
-      .replace(/{total}/g, mockPreviewData.total)
-      .replace(/{tracking}/g, mockPreviewData.tracking);
+      .replace(/{nama}/g, previewData.nama)
+      .replace(/{total}/g, previewData.total)
+      .replace(/{tracking}/g, previewData.tracking);
   };
 
   return (
@@ -79,7 +79,7 @@ export const TemplatesView: React.FC<TemplatesViewProps> = ({ templates, onTempl
                   <span className="text-xs font-bold text-slate-800">{tpl.name}</span>
                   {isOrderFormat && (
                     <span className="ml-2 px-2 py-0.5 rounded-full text-[9px] font-extrabold bg-emerald-600 text-white flex items-center gap-0.5 tracking-wide">
-                      ⚡ SAVE TIME
+                      SAVE TIME
                     </span>
                   )}
                 </div>
@@ -113,7 +113,8 @@ export const TemplatesView: React.FC<TemplatesViewProps> = ({ templates, onTempl
                 {isOrderFormat && (
                   <div className="px-3.5 py-2.5 bg-emerald-50/60 border border-emerald-100 rounded-xl text-[10.5px] text-emerald-800 leading-relaxed">
                     <p className="font-bold flex items-center gap-1.5">
-                      💡 Tip Hemat Waktu
+                      <Lightbulb className="w-3 h-3" />
+                      Tip Hemat Waktu
                     </p>
                     <p className="text-emerald-700 mt-1 font-medium">
                       Kirim format kosong ini ke pelanggan baru Anda. Saat mereka membalas dengan format yang sudah diisi, Anda tinggal menyalin balasannya ke sistem untuk memproses orderan secara cepat tanpa ketik manual satu per satu!
@@ -134,7 +135,7 @@ export const TemplatesView: React.FC<TemplatesViewProps> = ({ templates, onTempl
                 {/* Live Variable Preview */}
                 <div className="space-y-1.5">
                   <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">
-                    Mock Variable Preview
+                    Variable Preview
                   </span>
                   <div className="bg-emerald-50/30 border border-emerald-100 rounded-lg p-3 text-[11px] text-slate-700 whitespace-pre-wrap leading-relaxed">
                     {getPreviewText(tpl.body)}

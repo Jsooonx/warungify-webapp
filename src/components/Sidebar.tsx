@@ -4,7 +4,7 @@ import {
   ShoppingCart, 
   Users, 
   MessageSquare, 
-  Clock, 
+  ShieldCheck,
   PlusCircle, 
   LogOut,
   ChevronRight
@@ -16,13 +16,17 @@ interface SidebarProps {
   setActiveTab: (tab: string) => void;
   onCreateOrderClick: () => void;
   onLogoutClick?: () => void;
+  userName?: string;
+  userEmail?: string;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ 
   activeTab, 
   setActiveTab,
   onCreateOrderClick,
-  onLogoutClick
+  onLogoutClick,
+  userName = 'Workspace User',
+  userEmail = 'Account active',
 }) => {
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -84,22 +88,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
         })}
       </nav>
 
-      {/* Bottom Information Card: Trial Progress */}
+      {/* Bottom Information Card */}
       <div className="p-4 border-t border-slate-100 bg-slate-50/50">
         <div className="p-3 bg-white border border-slate-200/60 rounded-xl shadow-xs">
           <div className="flex items-center justify-between text-[11px] mb-1.5">
             <span className="text-slate-500 font-medium flex items-center gap-1.5">
-              <Clock className="w-3 h-3 text-slate-400" />
-              Trial Period
+              <ShieldCheck className="w-3 h-3 text-emerald-500" />
+              Secure Workspace
             </span>
-            <span className="text-slate-900 font-semibold">12 days left</span>
-          </div>
-          {/* Progress Bar */}
-          <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
-            <div className="h-full bg-emerald-500 rounded-full" style={{ width: '85%' }}></div>
+            <span className="text-emerald-700 font-semibold">Active</span>
           </div>
           <p className="text-[10px] text-slate-400 font-normal mt-2 leading-normal">
-            Your 14-day free trial ends on June 15, 2026.
+            Auth and database rows are scoped to the signed-in account.
           </p>
         </div>
       </div>
@@ -108,11 +108,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
       <div className="px-4 py-3 border-t border-slate-100 flex items-center justify-between gap-3">
         <div className="flex items-center gap-2.5 overflow-hidden">
           <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center font-bold text-xs text-slate-600 uppercase border border-slate-200">
-            N
+            {(userName || userEmail || 'U').trim().charAt(0)}
           </div>
           <div className="overflow-hidden">
-            <p className="text-xs font-semibold text-slate-800 truncate leading-none">Nur Aini</p>
-            <p className="text-[10px] text-slate-400 truncate mt-1">Free Trial Member</p>
+            <p className="text-xs font-semibold text-slate-800 truncate leading-none">{userName}</p>
+            <p className="text-[10px] text-slate-400 truncate mt-1">{userEmail}</p>
           </div>
         </div>
         <button 

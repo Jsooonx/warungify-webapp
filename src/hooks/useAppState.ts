@@ -5,7 +5,14 @@ import { supabase, requireSupabaseConfig, isSupabaseConfigured } from '../lib/su
 import { createOrder, deleteOrderById, fetchOrders, importOrders, updateOrderById } from '../services/orderService';
 import { PREDEFINED_TEMPLATES, seedTemplatesIfEmpty } from '../services/templateService';
 
-const STORAGE_KEY_ORDERS = 'wa_order_manager_orders';
+const STORAGE_KEY_ORDERS = 'warungflow_orders';
+const LEGACY_STORAGE_KEY_ORDERS = 'wa_order_manager_orders';
+const getImportFlagKey = (userId: string) => `warungflow_imported_${userId}`;
+const getLegacyImportFlagKey = (userId: string) => `wa_order_manager_imported_${userId}`;
+
+const getSavedLocalOrders = () => (
+  localStorage.getItem(STORAGE_KEY_ORDERS) || localStorage.getItem(LEGACY_STORAGE_KEY_ORDERS)
+);
 
 type OrderDraft = Omit<Order, 'id' | 'orderNumber' | 'createdAt' | 'updatedAt'>;
 
@@ -103,8 +110,10 @@ export const useAppState = (user: User | null) => {
       setOrders(remoteOrders);
       setTemplates(remoteTemplates);
 
-      const localOrders = localStorage.getItem(STORAGE_KEY_ORDERS);
-      const importedFlag = localStorage.getItem(`wa_order_manager_imported_${user.id}`);
+      const localOrders = getSavedLocalOrders();
+      const importedFlag =
+        localStorage.getItem(getImportFlagKey(user.id)) ||
+        localStorage.getItem(getLegacyImportFlagKey(user.id));
       setCanImportLocalOrders(Boolean(localOrders && !importedFlag && remoteOrders.length === 0));
     } catch (error) {
       setDataError(error instanceof Error ? error.message : 'Failed to load Supabase data.');
@@ -143,13 +152,13 @@ export const useAppState = (user: User | null) => {
   const importLocalOrders = useCallback(async () => {
     if (!user) throw new Error('Login required before importing orders.');
     requireSupabaseConfig();
-    const saved = localStorage.getItem(STORAGE_KEY_ORDERS);
+    const saved = getSavedLocalOrders();
     if (!saved) return [];
 
     const parsed = JSON.parse(saved) as Order[];
     const normalized = parsed.map(normalizeLocalOrder);
     const imported = await importOrders(user.id, normalized);
-    localStorage.setItem(`wa_order_manager_imported_${user.id}`, 'true');
+    localStorage.setItem(getImportFlagKey(user.id), 'true');
     setCanImportLocalOrders(false);
     setOrders((prev) => [...imported, ...prev].sort(
       (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
@@ -161,7 +170,7 @@ export const useAppState = (user: User | null) => {
 
   const dismissLocalImport = useCallback(() => {
     if (!user) return;
-    localStorage.setItem(`wa_order_manager_imported_${user.id}`, 'declined');
+    localStorage.setItem(getImportFlagKey(user.id), 'declined');
     setCanImportLocalOrders(false);
   }, [user]);
 

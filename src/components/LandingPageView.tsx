@@ -303,13 +303,13 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onGetStartedCl
         </div>
       </section>
 
-      {/* Showcase Image Mockup */}
+      {/* Showcase Image Preview */}
       <section className="px-6 sm:px-12 max-w-6xl mx-auto pb-24">
         <div className="hero-showcase-rise">
           <div className="hero-showcase-float relative rounded-2xl border border-slate-200 bg-white shadow-2xl overflow-hidden p-2 sm:p-3">
             <img 
               src={dashboardImg} 
-              alt="WarungFlow Dashboard Mockup" 
+              alt="WarungFlow Dashboard Preview" 
               className="w-full h-auto object-cover rounded-xl border border-slate-100"
             />
           </div>
@@ -476,7 +476,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onGetStartedCl
               })}
             </div>
 
-            {/* Right side: Mockup preview */}
+            {/* Right side: Product preview */}
             <div className="lg:col-span-7 bg-slate-50 border border-slate-100 rounded-3xl p-6 sm:p-10 flex items-center justify-center min-h-[440px] shadow-xs">
               <div className="relative rounded-2xl border border-slate-200 bg-white shadow-xl overflow-hidden p-2 w-full max-w-lg transition-all duration-300 transform scale-100">
                 <img 

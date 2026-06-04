@@ -36,7 +36,7 @@ const BASELINES: Record<OrderStatus, number[]> = {
   cancelled: [1, 2, 1, 3, 2, 2, 2],
 };
 
-// Trend mock values
+// Lightweight trend fallback values for visual context.
 const TRENDS: Record<OrderStatus, { value: number; isPositive: boolean }> = {
   pending_payment: { value: 12.5, isPositive: true },
   paid: { value: 19.8, isPositive: true },

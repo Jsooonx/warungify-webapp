@@ -2,13 +2,15 @@ import { useEffect, useState } from 'react';
 import type { Session, User } from '@supabase/supabase-js';
 import { supabase, isSupabaseConfigured } from '../lib/supabaseClient';
 
+const PASSWORD_RECOVERY_KEY = 'warungflow_password_recovery';
+
 export const useAuthSession = () => {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
   const [authError, setAuthError] = useState<string | null>(null);
   const [isPasswordRecovery, setIsPasswordRecovery] = useState(() => {
-    return sessionStorage.getItem('wa_order_manager_password_recovery') === 'true';
+    return sessionStorage.getItem(PASSWORD_RECOVERY_KEY) === 'true';
   });
 
   useEffect(() => {
@@ -55,7 +57,7 @@ export const useAuthSession = () => {
 
     const { data: listener } = supabase.auth.onAuthStateChange((event, nextSession) => {
       if (event === 'PASSWORD_RECOVERY') {
-        sessionStorage.setItem('wa_order_manager_password_recovery', 'true');
+        sessionStorage.setItem(PASSWORD_RECOVERY_KEY, 'true');
         setIsPasswordRecovery(true);
         window.location.hash = '/login?mode=reset';
       }
@@ -80,7 +82,7 @@ export const useAuthSession = () => {
     isAuthenticated: Boolean(session?.user),
     isPasswordRecovery,
     clearPasswordRecovery: () => {
-      sessionStorage.removeItem('wa_order_manager_password_recovery');
+      sessionStorage.removeItem(PASSWORD_RECOVERY_KEY);
       setIsPasswordRecovery(false);
     },
     isAuthLoading,

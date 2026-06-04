@@ -294,7 +294,7 @@ export const OrderFormView: React.FC<OrderFormViewProps> = ({
               value={pasteInput}
               onChange={handlePasteChange}
               rows={4}
-              placeholder="Paste chat message here...&#10;e.g.&#10;Nama: Budi Santoso&#10;WhatsApp: 08129876543&#10;Produk: Nastar Box&#10;Total Harga: 180000"
+              placeholder="Paste chat message here...&#10;e.g.&#10;Nama: Pelanggan Baru&#10;WhatsApp: 08xxxxxxxxxx&#10;Produk: Paket Produk&#10;Total Harga: 180000"
               className="w-full p-3 border border-slate-200 bg-slate-50/50 rounded-lg text-xs transition-colors focus:bg-white focus:border-emerald-500 focus:outline-hidden resize-none h-28"
             />
             {parsedFields.length > 0 && (
@@ -365,7 +365,7 @@ export const OrderFormView: React.FC<OrderFormViewProps> = ({
                 type="text"
                 value={customerName}
                 onChange={(e) => setCustomerName(e.target.value)}
-                placeholder="e.g. Budi Santoso"
+                placeholder="e.g. Pelanggan Baru"
                 className={`w-full h-10 px-3 border rounded-lg text-xs transition-colors focus:bg-white focus:outline-hidden ${
                   errors.customerName 
                     ? 'border-rose-300 bg-rose-50/20 focus:border-rose-500' 
@@ -391,7 +391,7 @@ export const OrderFormView: React.FC<OrderFormViewProps> = ({
                 type="text"
                 value={whatsappNumber}
                 onChange={(e) => setWhatsappNumber(e.target.value)}
-                placeholder="e.g. 08129876543"
+                placeholder="e.g. 08xxxxxxxxxx"
                 className={`w-full h-10 px-3 border rounded-lg text-xs font-mono transition-colors focus:bg-white focus:outline-hidden ${
                   errors.whatsappNumber 
                     ? 'border-rose-300 bg-rose-50/20 focus:border-rose-500' 
@@ -400,7 +400,7 @@ export const OrderFormView: React.FC<OrderFormViewProps> = ({
                 style={getParsedStyle('whatsappNumber')}
               />
               <span className="text-[10px] text-slate-400 block font-normal leading-normal">
-                Use local formatting (e.g. 0812...) or international (e.g. 62812...).
+                Use local formatting (08...) or international (62...).
               </span>
               {errors.whatsappNumber && (
                 <span className="text-[10px] text-rose-600 font-semibold mt-1 block">{errors.whatsappNumber}</span>
@@ -443,7 +443,7 @@ export const OrderFormView: React.FC<OrderFormViewProps> = ({
                 type="text"
                 value={productName}
                 onChange={(e) => setProductName(e.target.value)}
-                placeholder="e.g. Nastar Cake Box Premium"
+                placeholder="e.g. Paket Produk Premium"
                 className={`w-full h-10 px-3 border rounded-lg text-xs transition-colors focus:bg-white focus:outline-hidden ${
                   errors.productName 
                     ? 'border-rose-300 bg-rose-50/20 focus:border-rose-500' 
@@ -539,7 +539,7 @@ export const OrderFormView: React.FC<OrderFormViewProps> = ({
                 type="text"
                 value={trackingNumber}
                 onChange={(e) => setTrackingNumber(e.target.value)}
-                placeholder="e.g. JNE123456789 / GOSEND-82910"
+                placeholder="e.g. RESI123456789 / COURIER-82910"
                 className="w-full h-10 px-3 border border-slate-200 bg-slate-50/50 rounded-lg text-xs font-mono transition-colors focus:bg-white focus:border-emerald-500 focus:outline-hidden"
               />
             </div>
