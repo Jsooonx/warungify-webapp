@@ -1,0 +1,315 @@
+import React, { useMemo, useState } from 'react';
+import { CheckCircle, Key, LogIn, Mail, Sparkles, UserPlus } from 'lucide-react';
+import { RollingText } from './RollingText';
+import {
+  sendPasswordReset,
+  signInWithEmail,
+  signUpWithEmail,
+  updateCurrentUserPassword,
+} from '../services/authService';
+import { isSupabaseConfigured } from '../lib/supabaseClient';
+
+type AuthMode = 'login' | 'signup' | 'forgot' | 'reset';
+
+interface LoginViewProps {
+  onLoginSuccess: (email: string) => void;
+  onPasswordResetComplete?: () => void;
+}
+
+export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess, onPasswordResetComplete }) => {
+  const initialMode = useMemo<AuthMode>(() => (
+    window.location.hash.includes('mode=reset') || sessionStorage.getItem('wa_order_manager_password_recovery') === 'true' ? 'reset' : 'login'
+  ), []);
+  const [mode, setMode] = useState<AuthMode>(initialMode);
+  const [fullName, setFullName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [error, setError] = useState('');
+  const [notice, setNotice] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+
+  const isLogin = mode === 'login';
+  const isSignup = mode === 'signup';
+  const isForgot = mode === 'forgot';
+  const isReset = mode === 'reset';
+
+  const title = {
+    login: 'Selamat Datang',
+    signup: 'Buat Akun Baru',
+    forgot: 'Reset Password',
+    reset: 'Password Baru',
+  }[mode];
+
+  const subtitle = {
+    login: 'Login untuk masuk ke workspace WA Order Manager Anda.',
+    signup: 'Daftar akun dan verifikasi email sebelum masuk dashboard.',
+    forgot: 'Masukkan email akun Anda untuk menerima link reset password.',
+    reset: 'Masukkan password baru untuk mengamankan akun Anda.',
+  }[mode];
+
+  const submitLabel = {
+    login: 'Masuk Workspace',
+    signup: 'Create Account',
+    forgot: 'Send Reset Link',
+    reset: 'Update Password',
+  }[mode];
+
+  const resetMessages = () => {
+    setError('');
+    setNotice('');
+  };
+
+  const switchMode = (nextMode: AuthMode) => {
+    resetMessages();
+    if (nextMode !== 'reset' && window.location.hash.includes('mode=reset')) {
+      window.history.replaceState(null, '', `${window.location.pathname}#/login`);
+    }
+    setMode(nextMode);
+  };
+
+  const validatePasswordMatch = () => {
+    if ((isSignup || isReset) && password !== confirmPassword) {
+      throw new Error('Password confirmation does not match.');
+    }
+    if ((isSignup || isReset || isLogin) && password.length < 6) {
+      throw new Error('Password minimal 6 karakter.');
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    resetMessages();
+    setIsLoading(true);
+
+    try {
+      if (!isSupabaseConfigured) {
+        throw new Error('Supabase env belum dikonfigurasi. Isi VITE_SUPABASE_URL dan VITE_SUPABASE_ANON_KEY.');
+      }
+
+      if (isLogin) {
+        validatePasswordMatch();
+        await signInWithEmail(email, password);
+        onLoginSuccess(email);
+      } else if (isSignup) {
+        validatePasswordMatch();
+        await signUpWithEmail(email, password, fullName);
+        setNotice('Akun dibuat. Cek email Anda untuk verifikasi sebelum login.');
+        setPassword('');
+        setConfirmPassword('');
+        setMode('login');
+      } else if (isForgot) {
+        await sendPasswordReset(email);
+        setNotice('Link reset password sudah dikirim. Cek inbox email Anda.');
+      } else if (isReset) {
+        validatePasswordMatch();
+        await updateCurrentUserPassword(password);
+        setNotice('Password berhasil diperbarui. Silakan login ulang jika diminta.');
+        setPassword('');
+        setConfirmPassword('');
+        onPasswordResetComplete?.();
+        window.history.replaceState(null, '', `${window.location.pathname}#/login`);
+        setMode('login');
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Auth request failed.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen w-screen flex bg-slate-50 overflow-hidden font-sans select-none">
+      <div className="hidden lg:flex lg:w-1/2 bg-slate-900 relative items-center justify-center p-12 overflow-hidden">
+        <div className="absolute inset-0 bg-radial-gradient from-emerald-500/10 via-transparent to-transparent opacity-60 pointer-events-none" />
+        <div className="absolute -top-40 -left-40 w-96 h-96 rounded-full bg-emerald-500/5 blur-3xl" />
+        <div className="absolute -bottom-40 -right-40 w-96 h-96 rounded-full bg-teal-500/5 blur-3xl" />
+
+        <div className="max-w-md relative z-10 space-y-8">
+          <div className="flex items-center gap-3">
+            <img
+              src="/Logo-waordermanager.png"
+              alt="WA Order Manager Logo"
+              className="w-12 h-12 object-contain rounded-2xl"
+            />
+            <div>
+              <h1 className="text-xl font-bold text-white tracking-tight leading-none">WA Order Manager</h1>
+              <span className="text-[10px] text-emerald-400/80 font-semibold tracking-wider uppercase mt-1 inline-block">Workspace</span>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <h2 className="text-3xl font-extrabold text-white tracking-tight leading-tight">
+              Kelola pesanan WhatsApp dengan akun dan database sungguhan.
+            </h2>
+            <p className="text-slate-400 text-sm leading-relaxed">
+              Auth, reset password, dan order database sekarang tersimpan per akun melalui Supabase.
+            </p>
+          </div>
+
+          <div className="space-y-3 pt-4 border-t border-slate-800">
+            <div className="flex items-start gap-3 text-slate-300 text-xs">
+              <div className="p-1 rounded-md bg-emerald-500/10 text-emerald-400 mt-0.5">✓</div>
+              <div>
+                <p className="font-semibold text-slate-200">Email verified account</p>
+                <p className="text-slate-400 mt-0.5">Signup publik dengan verifikasi email dan recovery password.</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3 text-slate-300 text-xs">
+              <div className="p-1 rounded-md bg-emerald-500/10 text-emerald-400 mt-0.5">↗</div>
+              <div>
+                <p className="font-semibold text-slate-200">User-owned database</p>
+                <p className="text-slate-400 mt-0.5">Orders dan templates dipisahkan per akun dengan Supabase RLS.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="w-full lg:w-1/2 flex items-center justify-center p-8 sm:p-12 md:p-16 bg-white overflow-y-auto">
+        <div className="w-full max-w-sm space-y-6">
+          <div className="space-y-2">
+            <h3 className="text-2xl font-extrabold text-slate-900 tracking-tight">{title}</h3>
+            <p className="text-xs text-slate-400">{subtitle}</p>
+          </div>
+
+          {!isSupabaseConfigured && (
+            <div className="p-3.5 bg-amber-50 border border-amber-200/70 rounded-xl text-[11px] font-semibold text-amber-800 leading-normal">
+              Supabase belum aktif. Isi `.env` dari `.env.example`, lalu restart dev server.
+            </div>
+          )}
+
+          {error && (
+            <div className="p-3.5 bg-rose-50 border border-rose-200/60 rounded-xl text-[11px] font-semibold text-rose-800 leading-normal">
+              {error}
+            </div>
+          )}
+
+          {notice && (
+            <div className="p-3.5 bg-emerald-50 border border-emerald-200/60 rounded-xl text-[11px] font-semibold text-emerald-800 leading-normal flex gap-2">
+              <CheckCircle className="w-4 h-4 shrink-0" />
+              <span>{notice}</span>
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {isSignup && (
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Full Name</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Nama bisnis / owner"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  disabled={isLoading}
+                  className="w-full h-10 px-4 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:bg-white focus:border-emerald-500 focus:outline-hidden transition-all font-medium"
+                />
+              </div>
+            )}
+
+            {!isReset && (
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Email Address</label>
+                <div className="relative">
+                  <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
+                  <input
+                    type="email"
+                    required
+                    placeholder="name@company.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    disabled={isLoading}
+                    className="w-full h-10 pl-10 pr-4 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:bg-white focus:border-emerald-500 focus:outline-hidden transition-all font-medium"
+                  />
+                </div>
+              </div>
+            )}
+
+            {!isForgot && (
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Password</label>
+                  {isLogin && (
+                    <button
+                      type="button"
+                      onClick={() => switchMode('forgot')}
+                      className="group text-[10px] font-bold text-emerald-600 hover:text-emerald-700 cursor-pointer"
+                    >
+                      <RollingText compact>Lupa Password?</RollingText>
+                    </button>
+                  )}
+                </div>
+                <div className="relative">
+                  <Key className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
+                  <input
+                    type="password"
+                    required
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    disabled={isLoading}
+                    className="w-full h-10 pl-10 pr-4 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:bg-white focus:border-emerald-500 focus:outline-hidden transition-all font-medium"
+                  />
+                </div>
+              </div>
+            )}
+
+            {(isSignup || isReset) && (
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Confirm Password</label>
+                <input
+                  type="password"
+                  required
+                  placeholder="••••••••"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  disabled={isLoading}
+                  className="w-full h-10 px-4 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:bg-white focus:border-emerald-500 focus:outline-hidden transition-all font-medium"
+                />
+              </div>
+            )}
+
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="group w-full h-10 rounded-xl border border-transparent bg-slate-950 hover:bg-white active:bg-slate-50 text-white hover:text-slate-950 text-xs font-semibold flex items-center justify-center gap-2 transition-all duration-500 cursor-pointer shadow-sm disabled:opacity-50 disabled:hover:bg-slate-950 disabled:hover:text-white"
+            >
+              {isLoading ? (
+                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              ) : (
+                <>
+                  {isSignup ? <UserPlus className="w-4 h-4" /> : isForgot ? <Mail className="w-4 h-4" /> : <LogIn className="w-4 h-4 transition-transform duration-500 group-hover:translate-x-0.5" />}
+                  <RollingText>{submitLabel}</RollingText>
+                </>
+              )}
+            </button>
+          </form>
+
+          <div className="border-t border-slate-100 pt-4 flex flex-wrap items-center justify-center gap-3 text-[11px] font-bold">
+            {!isLogin && (
+              <button type="button" onClick={() => switchMode('login')} className="group text-slate-500 hover:text-slate-950 cursor-pointer">
+                <RollingText compact>Back to login</RollingText>
+              </button>
+            )}
+            {!isSignup && !isReset && (
+              <button type="button" onClick={() => switchMode('signup')} className="group text-emerald-600 hover:text-emerald-700 cursor-pointer">
+                <RollingText compact>Create account</RollingText>
+              </button>
+            )}
+            {isLogin && (
+              <span className="text-slate-300">Email verification required</span>
+            )}
+          </div>
+
+          <div className="p-3.5 bg-slate-50 border border-slate-100 rounded-xl flex items-start gap-3 select-none">
+            <Sparkles className="w-4 h-4 text-emerald-600 mt-0.5 shrink-0" />
+            <p className="text-[11px] leading-relaxed text-slate-500 font-medium">
+              Demo credentials sudah dimatikan. Gunakan akun Supabase sungguhan agar data order tersimpan di database per user.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
