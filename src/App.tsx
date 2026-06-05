@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState, useEffect } from 'react';
+import { useCallback, useMemo, useRef, useState, useEffect } from 'react';
 import { useAppState } from './hooks/useAppState';
 import { Sidebar } from './components/Sidebar';
 import { DashboardView } from './components/DashboardView';
@@ -8,16 +8,20 @@ import { CustomersView } from './components/CustomersView';
 import { TemplatesView } from './components/TemplatesView';
 import { LoginView } from './components/LoginView';
 import { LandingPageView } from './components/LandingPageView';
-import { CheckCircle, X } from 'lucide-react';
+import { PendingApprovalView } from './components/PendingApprovalView';
+import { CheckCircle, LayoutDashboard, LogOut, MessageSquare, PlusCircle, ShoppingCart, Users, X } from 'lucide-react';
 import { useHashRouter } from './hooks/useHashRouter';
 import type { Order, OrderStatus } from './types';
 import { useAuthSession } from './hooks/useAuthSession';
 import { signOut } from './services/authService';
+import { copyInvoiceAndOpenWhatsApp, copyInvoiceText } from './lib/whatsapp';
+import { getFriendlyErrorMessage } from './lib/errors';
 
 type Toast = {
   id: string;
   title: string;
   message?: string;
+  isExiting?: boolean;
 };
 
 type ChangeKind = 'create' | 'edit' | 'status';
@@ -32,7 +36,9 @@ const ToastViewport = ({ toasts, onDismiss }: ToastViewportProps) => (
     {toasts.map((toast) => (
       <div
         key={toast.id}
-        className="toast-enter w-full max-w-sm rounded-xl border border-emerald-200/70 bg-white px-4 py-3 shadow-lg shadow-slate-900/8 flex items-start gap-3"
+        className={`${
+          toast.isExiting ? 'toast-exit' : 'toast-enter'
+        } w-full max-w-sm rounded-xl border border-emerald-200/70 bg-white px-4 py-3 shadow-lg shadow-slate-900/8 flex items-start gap-3`}
       >
         <CheckCircle className="w-4 h-4 text-emerald-600 mt-0.5 shrink-0" />
         <div className="min-w-0 flex-1">
@@ -71,6 +77,82 @@ const PageLoadingScreen = () => (
   </div>
 );
 
+interface MobileAppShellProps {
+  activeTab: string;
+  onNavigate: (tab: string) => void;
+  onCreateOrderClick: () => void;
+  onLogoutClick: () => void;
+  userName: string;
+  children: React.ReactNode;
+}
+
+const MobileAppShell = ({
+  activeTab,
+  onNavigate,
+  onCreateOrderClick,
+  onLogoutClick,
+  userName,
+  children,
+}: MobileAppShellProps) => {
+  const items = [
+    { id: 'dashboard', label: 'Home', icon: LayoutDashboard },
+    { id: 'orders', label: 'Orders', icon: ShoppingCart },
+    { id: 'customers', label: 'Customers', icon: Users },
+    { id: 'templates', label: 'Templates', icon: MessageSquare },
+  ];
+
+  return (
+    <div className="lg:hidden flex h-screen w-screen flex-col overflow-hidden bg-slate-50">
+      <header className="h-14 shrink-0 border-b border-slate-200 bg-white px-4 flex items-center justify-between">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <img src="/Logo-warungflow.png" alt="WarungFlow Logo" className="h-8 w-8 rounded-lg object-contain" />
+          <div className="min-w-0">
+            <p className="text-sm font-extrabold text-slate-900 leading-none">WarungFlow</p>
+            <p className="mt-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 truncate">{userName}</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <button
+            onClick={onCreateOrderClick}
+            className="h-8 w-8 rounded-lg bg-emerald-600 text-white flex items-center justify-center shadow-xs"
+            title="Create new order"
+          >
+            <PlusCircle className="h-4 w-4" />
+          </button>
+          <button
+            onClick={onLogoutClick}
+            className="h-8 w-8 rounded-lg border border-slate-200 bg-white text-slate-400 flex items-center justify-center"
+            title="Logout"
+          >
+            <LogOut className="h-4 w-4" />
+          </button>
+        </div>
+      </header>
+
+      <main className="min-h-0 flex-1 overflow-y-auto overscroll-contain bg-slate-50">{children}</main>
+
+      <nav className="h-16 shrink-0 border-t border-slate-200 bg-white px-2 pb-[env(safe-area-inset-bottom)] grid grid-cols-4">
+        {items.map((item) => {
+          const Icon = item.icon;
+          const isActive = activeTab === item.id;
+          return (
+            <button
+              key={item.id}
+              onClick={() => onNavigate(item.id)}
+              className={`flex flex-col items-center justify-center gap-1 text-[10px] font-bold transition-colors ${
+                isActive ? 'text-emerald-600' : 'text-slate-400'
+              }`}
+            >
+              <Icon className="h-4 w-4" />
+              <span>{item.label}</span>
+            </button>
+          );
+        })}
+      </nav>
+    </div>
+  );
+};
+
 function App() {
   useEffect(() => {
     document.title = 'WarungFlow - SaaS Workspace';
@@ -78,10 +160,13 @@ function App() {
 
   const {
     user,
+    profile,
     isAuthenticated,
+    isApproved,
     isPasswordRecovery,
     clearPasswordRecovery,
     isAuthLoading,
+    isProfileLoading,
     authError,
   } = useAuthSession();
 
@@ -97,13 +182,17 @@ function App() {
     deleteOrder,
     importLocalOrders,
     dismissLocalImport,
-  } = useAppState(user);
+  } = useAppState(isApproved ? user : null);
 
   const { path, params, navigate } = useHashRouter();
   const isPasswordResetRoute = (path === 'login' && window.location.hash.includes('mode=reset')) || isPasswordRecovery;
 
   const [isPageLoading, setIsPageLoading] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [localInvoiceHandledOrderIds, setLocalInvoiceHandledOrderIds] = useState<string[]>([]);
+  const [isMobileViewport, setIsMobileViewport] = useState(() => (
+    typeof window !== 'undefined' ? window.innerWidth < 1024 : false
+  ));
   const [pageLoadingRun, setPageLoadingRun] = useState(0);
   const pageLoadingActionTimerRef = useRef<number | null>(null);
   const pageLoadingEndTimerRef = useRef<number | null>(null);
@@ -126,6 +215,43 @@ function App() {
       setIsPageLoading(false);
     }, 920);
   }, []);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobileViewport(window.innerWidth < 1024);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  useEffect(() => {
+    if (!user?.id) {
+      setLocalInvoiceHandledOrderIds([]);
+      return;
+    }
+
+    const saved = localStorage.getItem(`warungflow_invoice_handled_${user.id}`);
+    setLocalInvoiceHandledOrderIds(saved ? JSON.parse(saved) as string[] : []);
+  }, [user?.id]);
+
+  const invoiceHandledOrderIds = useMemo(() => {
+    const remoteHandled = orders
+      .filter((order) => Boolean(order.invoiceSentAt))
+      .map((order) => order.id);
+    return Array.from(new Set([...remoteHandled, ...localInvoiceHandledOrderIds]));
+  }, [localInvoiceHandledOrderIds, orders]);
+
+  const markInvoiceHandled = useCallback(async (orderId: string) => {
+    if (!user?.id) return;
+    setLocalInvoiceHandledOrderIds((prev) => {
+      const next = Array.from(new Set([...prev, orderId]));
+      localStorage.setItem(`warungflow_invoice_handled_${user.id}`, JSON.stringify(next));
+      return next;
+    });
+    try {
+      await updateOrder(orderId, { invoiceSentAt: new Date().toISOString() });
+    } catch {
+      // Local fallback keeps invoice reminders usable before the Supabase schema is migrated.
+    }
+  }, [updateOrder, user?.id]);
 
   const navigateWithLoading = useCallback((
     nextPath: string,
@@ -184,7 +310,9 @@ function App() {
     ? (orders.find((o) => o.id === params.id) || null)
     : null;
   const displayName = (
-    typeof user?.user_metadata?.full_name === 'string' && user.user_metadata.full_name.trim()
+    profile?.fullName?.trim()
+      ? profile.fullName.trim()
+      : typeof user?.user_metadata?.full_name === 'string' && user.user_metadata.full_name.trim()
       ? user.user_metadata.full_name.trim()
       : user?.email?.split('@')[0]
   ) || 'Workspace User';
@@ -197,7 +325,12 @@ function App() {
   const savedTimerRef = useRef<number | null>(null);
 
   const dismissToast = useCallback((id: string) => {
-    setToasts((prev) => prev.filter((toast) => toast.id !== id));
+    setToasts((prev) =>
+      prev.map((toast) => (toast.id === id ? { ...toast, isExiting: true } : toast))
+    );
+    window.setTimeout(() => {
+      setToasts((prev) => prev.filter((toast) => toast.id !== id));
+    }, 200); // matches the 0.2s duration of toast-exit animation
   }, []);
 
   const showToast = useCallback((title: string, message?: string) => {
@@ -277,20 +410,40 @@ function App() {
     notes: string;
     status: OrderStatus;
     trackingNumber?: string;
-  }) => {
+  }, options?: { invoiceAction?: 'copy' | 'send' }) => {
     try {
+      let savedOrder: Order;
       if (orderToEdit) {
         const updated = await updateOrder(orderToEdit.id, orderData);
+        savedOrder = updated;
         markChangedOrder(updated.id, 'edit');
         showToast('Order updated', `${updated.orderNumber} details saved.`);
       } else {
         const newOrder = await addOrder(orderData);
+        savedOrder = newOrder;
         markChangedOrder(newOrder.id, 'create');
         showToast('Order created', `${newOrder.orderNumber} has been added.`);
       }
+      if (options?.invoiceAction && savedOrder.status === 'paid') {
+        const invoiceOrders = [savedOrder, ...orders.filter((order) => order.id !== savedOrder.id)];
+        if (options.invoiceAction === 'send') {
+          const result = await copyInvoiceAndOpenWhatsApp(savedOrder, invoiceOrders);
+          await markInvoiceHandled(savedOrder.id);
+          showToast(
+            result.copied ? 'Invoice sent via WhatsApp' : 'Invoice ready to paste',
+            result.copied
+              ? `${savedOrder.orderNumber} invoice copied. Paste it in the WhatsApp chat that just opened.`
+              : `${savedOrder.orderNumber} chat opened, but clipboard access was blocked. Copy the invoice manually.`,
+          );
+        } else {
+          await copyInvoiceText(savedOrder, invoiceOrders);
+          await markInvoiceHandled(savedOrder.id);
+          showToast('Invoice text copied', `${savedOrder.orderNumber} invoice is ready to paste.`);
+        }
+      }
       navigate('orders');
     } catch (error) {
-      showToast('Save failed', error instanceof Error ? error.message : 'Unable to save order.');
+      showToast('Save failed', getFriendlyErrorMessage(error, 'Unable to save order.'));
     }
   };
 
@@ -299,10 +452,14 @@ function App() {
   };
 
   const handleDeleteOrder = async (id: string) => {
-    const order = orders.find((item) => item.id === id);
-    const deleted = await deleteOrder(id);
-    if (deleted) {
-      showToast('Order deleted', `${order?.orderNumber || id} removed from order logs.`);
+    try {
+      const order = orders.find((item) => item.id === id);
+      const deleted = await deleteOrder(id);
+      if (deleted) {
+        showToast('Order deleted', `${order?.orderNumber || id} removed from order logs.`);
+      }
+    } catch (error) {
+      showToast('Delete failed', getFriendlyErrorMessage(error, 'Unable to delete order.'));
     }
   };
 
@@ -313,7 +470,7 @@ function App() {
       markSavedStatus(id);
       showToast('Status updated', `${updated.orderNumber} is now ${status.replace('_', ' ')}.`);
     } catch (error) {
-      showToast('Status failed', error instanceof Error ? error.message : 'Unable to update status.');
+      showToast('Status failed', getFriendlyErrorMessage(error, 'Unable to update status.'));
     }
   };
 
@@ -325,12 +482,30 @@ function App() {
     showToast('WhatsApp message copied', `${orderId} message copied and chat opened.`);
   };
 
+  const handleInvoiceCopied = (orderNumber: string, action: 'copy' | 'send', copied: boolean) => {
+    const order = orders.find((item) => item.orderNumber === orderNumber);
+    if (order) {
+      void markInvoiceHandled(order.id);
+    }
+
+    showToast(
+      action === 'send'
+        ? (copied ? 'Invoice sent via WhatsApp' : 'Invoice ready to paste')
+        : 'Invoice text copied',
+      action === 'send'
+        ? (copied
+          ? `${orderNumber} invoice copied. Paste it in the WhatsApp chat that just opened.`
+          : `${orderNumber} chat opened, but clipboard access was blocked. Copy the invoice manually.`)
+        : `${orderNumber} invoice is ready to paste.`,
+    );
+  };
+
   const handleImportLocalOrders = async () => {
     try {
       const imported = await importLocalOrders();
       showToast('Local orders imported', `${imported.length} orders moved to Supabase.`);
     } catch (error) {
-      showToast('Import failed', error instanceof Error ? error.message : 'Unable to import local orders.');
+      showToast('Import failed', getFriendlyErrorMessage(error, 'Unable to import local orders.'));
     }
   };
 
@@ -340,6 +515,7 @@ function App() {
       return (
         <OrderFormView
           orderToEdit={orderToEdit}
+          orders={orders}
           onSave={handleSaveOrder}
           onCancel={handleCancelForm}
           onFormatCopied={() => handleTemplateCopied('Blank order format')}
@@ -354,6 +530,7 @@ function App() {
             orders={orders}
             onNavigateToTab={handleNavigateToTab}
             onEditOrder={handleEditClick}
+            invoiceHandledOrderIds={invoiceHandledOrderIds}
             lastChangedOrder={lastChangedOrder}
           />
         );
@@ -371,6 +548,7 @@ function App() {
             onDeleteOrder={handleDeleteOrder}
             onUpdateStatus={handleUpdateStatus}
             onWhatsAppCopied={handleWhatsAppCopied}
+            onInvoiceCopied={handleInvoiceCopied}
           />
         );
       case 'customers':
@@ -396,7 +574,17 @@ function App() {
     }
   };
 
-  if (isAuthLoading) {
+  const betaApplicationUrl = import.meta.env.VITE_BETA_APPLICATION_URL as string | undefined;
+  const openBetaApplication = () => {
+    if (betaApplicationUrl) {
+      window.open(betaApplicationUrl, '_blank', 'noopener,noreferrer');
+      return;
+    }
+    showToast('Form beta belum diset', 'Isi VITE_BETA_APPLICATION_URL untuk membuka pendaftaran beta.');
+    navigateWithLoading('login');
+  };
+
+  if (isAuthLoading || isProfileLoading) {
     return <PageLoadingScreen />;
   }
 
@@ -410,21 +598,44 @@ function App() {
         onBackToLanding={() => navigateWithLoading('landing')}
       />
     ) : (
-      <LandingPageView onGetStartedClick={() => navigateWithLoading('login')} />
-    )
-  ) : (
-    <div className="flex h-screen w-screen overflow-hidden bg-slate-50">
-      <Sidebar
-        activeTab={activeTab}
-        setActiveTab={(tab) => navigate(tab)}
-        onCreateOrderClick={handleCreateOrderClick}
-        onLogoutClick={handleLogout}
-        userName={displayName}
-        userEmail={displayEmail}
+      <LandingPageView
+        onGetStartedClick={openBetaApplication}
+        onLoginClick={() => navigateWithLoading('login')}
       />
-      <main className="flex-1 flex flex-col min-w-0 bg-slate-50/50">{renderView()}</main>
+    )
+  ) : !isApproved ? (
+    <PendingApprovalView
+      profile={profile}
+      userEmail={displayEmail}
+      onLogout={handleLogout}
+    />
+  ) : (
+    <div className="h-screen w-screen overflow-hidden bg-slate-50">
+      {isMobileViewport ? (
+        <MobileAppShell
+          activeTab={activeTab}
+          onNavigate={(tab) => navigate(tab)}
+          onCreateOrderClick={handleCreateOrderClick}
+          onLogoutClick={handleLogout}
+          userName={displayName}
+        >
+          {renderView()}
+        </MobileAppShell>
+      ) : (
+        <div className="flex h-full w-full overflow-hidden">
+        <Sidebar
+          activeTab={activeTab}
+          setActiveTab={(tab) => navigate(tab)}
+          onCreateOrderClick={handleCreateOrderClick}
+          onLogoutClick={handleLogout}
+          userName={displayName}
+          userEmail={displayEmail}
+        />
+        <main className="flex-1 flex flex-col min-w-0 bg-slate-50/50">{renderView()}</main>
+        </div>
+      )}
       {(isDataLoading || dataError || authError || canImportLocalOrders) && (
-        <div className="fixed left-72 right-6 top-4 z-40 flex flex-col gap-2">
+        <div className="fixed left-4 right-4 top-16 z-40 flex flex-col gap-2 lg:left-72 lg:right-6 lg:top-4">
           {isDataLoading && (
             <div className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-xs font-semibold text-slate-500 shadow-lg shadow-slate-900/5">
               Loading workspace database...

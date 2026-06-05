@@ -14,13 +14,14 @@ import backgroundHeroImg from '../assets/background_hero.png';
 
 interface LandingPageViewProps {
   onGetStartedClick: () => void;
+  onLoginClick: () => void;
 }
 
 const NavRollingText: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   <RollingText compact>{children}</RollingText>
 );
 
-export const LandingPageView: React.FC<LandingPageViewProps> = ({ onGetStartedClick }) => {
+export const LandingPageView: React.FC<LandingPageViewProps> = ({ onGetStartedClick, onLoginClick }) => {
   const [activeTab, setActiveTab] = useState(0);
   const [isNavHovered, setIsNavHovered] = useState(false);
   const [lang, setLang] = useState<'id' | 'en'>('id');
@@ -57,12 +58,14 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onGetStartedCl
     id: {
       features: 'Fitur',
       pricing: 'Harga',
-      startFree: 'Mulai Gratis',
+      login: 'Masuk',
+      startFree: 'Daftar Beta',
       new: 'Baru',
       releaseAnnounce: 'Pengumuman Rilis',
       heroTitle: 'Platform order WhatsApp paling kuat.',
       heroSubtitle: 'Buka potensi bisnis Anda dengan platform SaaS tingkat lanjut. Transformasikan alur kerja Anda dan capai tingkat baru hari ini.',
-      getStarted: 'Mulai sekarang',
+      betaQuota: '100 pendaftar pertama akan kami review. Akses beta diberikan bertahap mulai dari Batch 1.',
+      getStarted: 'Daftar Beta Gratis',
       learnMore: 'Pelajari lebih lanjut',
       featuresTitle: 'Fitur yang dirancang untuk memperkuat alur kerja Anda',
       featuresSubtitle: 'Tetap terdepan dengan alat yang memprioritaskan kebutuhan Anda, mengintegrasikan wawasan dan efisiensi ke dalam satu platform yang kuat.',
@@ -97,7 +100,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onGetStartedCl
       featureAi: 'Asisten AI',
       featureReports: 'Laporan otomatis',
       footerTitle: 'Bergabunglah dengan 1.200+ bisnis yang menggunakan WarungFlow',
-      footerCta: 'Coba WarungFlow hari ini',
+      footerCta: 'Daftar Beta WarungFlow',
       footerCopyright: '© 2026 WarungFlow. Dibuat dengan cinta untuk penjual online modern.',
       howItWorks: 'Cara Kerja',
       howItWorksTitle: '4 Langkah Mudah Kelola Pesanan',
@@ -114,12 +117,14 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onGetStartedCl
     en: {
       features: 'Features',
       pricing: 'Pricing',
-      startFree: 'Start for free',
+      login: 'Login',
+      startFree: 'Join Beta',
       new: 'New',
       releaseAnnounce: 'Release Announcement',
       heroTitle: 'The most powerful WhatsApp order platform.',
       heroSubtitle: 'Unlock the potential of your business with our next-level SaaS platform. Transform your workflows and achieve new heights today.',
-      getStarted: 'Get started',
+      betaQuota: 'The first 100 applicants will be reviewed. Beta access opens gradually starting from Batch 1.',
+      getStarted: 'Join Free Beta',
       learnMore: 'Learn more',
       featuresTitle: 'Features designed to empower your workflow',
       featuresSubtitle: 'Stay ahead with tools that prioritize your needs, integrating insights and efficiency into one powerful platform.',
@@ -154,7 +159,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onGetStartedCl
       featureAi: 'AI assistant',
       featureReports: 'Automated reports',
       footerTitle: 'Join the 1,200+ businesses using WarungFlow',
-      footerCta: 'Try WarungFlow today',
+      footerCta: 'Join WarungFlow Beta',
       footerCopyright: '© 2026 WarungFlow. Built with love for modern online sellers.',
       howItWorks: 'How It Works',
       howItWorksTitle: '4 Easy Steps to Manage Your Orders',
@@ -210,7 +215,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onGetStartedCl
         onMouseEnter={() => setIsNavHovered(true)}
         onMouseLeave={() => setIsNavHovered(false)}
         className={`hero-nav-island fixed top-5 left-1/2 -translate-x-1/2 z-50 flex items-center justify-between overflow-hidden bg-neutral-950/95 backdrop-blur-md border border-neutral-800/80 px-3 py-2 rounded-2xl shadow-xl transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${
-          isNavHovered ? 'w-[440px] sm:w-[470px]' : 'w-[180px]'
+          isNavHovered ? 'w-[520px] sm:w-[560px]' : 'w-[180px]'
         }`}
       >
         {/* Logo container */}
@@ -224,7 +229,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onGetStartedCl
 
         {/* Navigation links - hidden when not hovered, shown with a transition when hovered */}
         <nav className={`flex items-center justify-center gap-5 text-xs font-bold text-neutral-400 transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] overflow-hidden ${
-          isNavHovered ? 'max-w-[300px] opacity-100 mx-2 scale-100' : 'max-w-0 opacity-0 mx-0 scale-90 pointer-events-none'
+          isNavHovered ? 'max-w-[380px] opacity-100 mx-2 scale-100' : 'max-w-0 opacity-0 mx-0 scale-90 pointer-events-none'
         }`}>
           <a href="#features" onClick={(e) => handleAnchorScroll(e, 'features')} className="group hover:text-white transition-colors py-1 whitespace-nowrap">
             <NavRollingText>{t.features}</NavRollingText>
@@ -235,6 +240,13 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onGetStartedCl
           <a href="#pricing" onClick={(e) => handleAnchorScroll(e, 'pricing')} className="group hover:text-white transition-colors py-1 whitespace-nowrap">
             <NavRollingText>{t.pricing}</NavRollingText>
           </a>
+          <button
+            type="button"
+            onClick={onLoginClick}
+            className="group hover:text-white transition-colors py-1 whitespace-nowrap cursor-pointer"
+          >
+            <NavRollingText>{t.login}</NavRollingText>
+          </button>
           <button 
             onClick={(e) => {
               e.stopPropagation();
@@ -297,6 +309,9 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onGetStartedCl
               <RollingText>{t.learnMore}</RollingText>
             </a>
           </div>
+          <p className="hero-entry hero-entry-5 text-[11px] font-semibold text-slate-500 max-w-md mx-auto leading-relaxed">
+            {t.betaQuota}
+          </p>
         </section>
 
         {/* Showcase Image Preview */}

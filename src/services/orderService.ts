@@ -14,6 +14,7 @@ export const mapOrderRow = (row: OrderRow): Order => ({
   notes: row.notes,
   status: row.status,
   trackingNumber: row.tracking_number || undefined,
+  invoiceSentAt: row.invoice_sent_at || undefined,
   createdAt: row.created_at,
   updatedAt: row.updated_at,
 });
@@ -29,6 +30,7 @@ const toOrderInsert = (userId: string, orderNumber: string, order: OrderInput) =
   notes: order.notes,
   status: order.status,
   tracking_number: order.trackingNumber || null,
+  invoice_sent_at: order.invoiceSentAt || null,
 });
 
 const toOrderUpdate = (order: Partial<OrderInput>) => ({
@@ -40,6 +42,7 @@ const toOrderUpdate = (order: Partial<OrderInput>) => ({
   ...(order.notes !== undefined ? { notes: order.notes } : {}),
   ...(order.status !== undefined ? { status: order.status } : {}),
   ...(order.trackingNumber !== undefined ? { tracking_number: order.trackingNumber || null } : {}),
+  ...(order.invoiceSentAt !== undefined ? { invoice_sent_at: order.invoiceSentAt || null } : {}),
 });
 
 export const fetchOrders = async () => {

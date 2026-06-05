@@ -102,6 +102,21 @@
   animation: toast-in 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
+@keyframes toast-out {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.97);
+  }
+}
+
+.toast-exit {
+  animation: toast-out 0.2s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
 @keyframes order-highlight-success {
   0% {
     background-color: rgba(16, 185, 129, 0.16);

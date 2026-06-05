@@ -14,6 +14,9 @@ import {
   ShoppingCart,
   CalendarClock,
   MessageSquare,
+  FileText,
+  ClipboardPaste,
+  Database,
   ArrowUpRight,
   X
 } from 'lucide-react';
@@ -23,6 +26,7 @@ interface DashboardViewProps {
   orders: Order[];
   onNavigateToTab: (tab: string, filterStatus?: string) => void;
   onEditOrder: (order: Order) => void;
+  invoiceHandledOrderIds?: string[];
   lastChangedOrder?: { id: string; kind: 'create' | 'edit' | 'status' } | null;
 }
 
@@ -201,6 +205,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   orders, 
   onNavigateToTab,
   onEditOrder,
+  invoiceHandledOrderIds = [],
   lastChangedOrder = null
 }) => {
   // Modal tracking states
@@ -246,6 +251,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   );
 
   const paidReady = orders.filter(o => o.status === 'paid');
+  const paidInvoiceMissing = paidReady.filter((order) => !invoiceHandledOrderIds.includes(order.id));
+  const paidReadyToPack = paidReady.filter((order) => invoiceHandledOrderIds.includes(order.id));
   const packingOrders = orders.filter(o => o.status === 'packing');
   const shippedWithTracking = orders.filter(o => 
     o.status === 'shipped' && !!o.trackingNumber?.trim()
@@ -337,7 +344,19 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       Icon: Clock,
       onAction: () => onNavigateToTab('orders', 'pending_payment'),
     })),
-    ...paidReady.map((order) => ({
+    ...paidInvoiceMissing.map((order) => ({
+      id: `invoice-${order.id}`,
+      order,
+      title: 'Invoice belum dikirim',
+      meta: `${order.orderNumber} - ${order.productName}`,
+      ageLabel: `${formatAge(getAgeMs(order))} paid`,
+      actionLabel: 'Invoice',
+      severity: 2,
+      tone: 'blue' as const,
+      Icon: FileText,
+      onAction: () => onNavigateToTab('orders', 'paid'),
+    })),
+    ...paidReadyToPack.map((order) => ({
       id: `paid-${order.id}`,
       order,
       title: 'Ready to pack',
@@ -465,17 +484,64 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   const uniqueGridValues = Array.from(new Set(gridValues)).sort((a, b) => a - b);
 
   const cardStatuses: OrderStatus[] = ['pending_payment', 'paid', 'packing', 'shipped', 'done'];
+  const hasNoOrders = orders.length === 0;
 
   return (
-    <div className="flex-1 p-8 overflow-y-auto space-y-6 select-none page-transition-enter">
+    <div className="flex-1 p-4 sm:p-8 overflow-y-auto space-y-6 select-none page-transition-enter">
       {/* Title Header */}
       <div>
         <h2 className="text-xl font-bold text-slate-900 tracking-tight">Overview Dashboard</h2>
         <p className="text-xs text-slate-400 mt-1">Real-time operational tracking and task queues.</p>
       </div>
 
+      {hasNoOrders && (
+        <div className="premium-card overflow-hidden bg-white">
+          <div className="grid grid-cols-1 lg:grid-cols-[1.05fr_1fr]">
+            <div className="p-6 sm:p-7 border-b lg:border-b-0 lg:border-r border-slate-100">
+              <div className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-100 mb-4">
+                <ShoppingCart className="h-4 w-4" />
+              </div>
+              <h3 className="text-lg font-extrabold text-slate-900 tracking-tight">Start your first order flow</h3>
+              <p className="mt-2 max-w-lg text-xs leading-relaxed text-slate-500">
+                Dashboard akan hidup setelah ada order pertama. Mulai dari input manual atau paste chat pembeli ke Magic Paste.
+              </p>
+              <div className="mt-5 flex flex-wrap gap-2">
+                <button
+                  onClick={() => onNavigateToTab('orders/new')}
+                  className="group h-9 px-4 rounded-lg bg-slate-950 hover:bg-white text-white hover:text-slate-950 text-xs font-bold transition-all duration-500 shadow-xs cursor-pointer"
+                >
+                  <RollingText compact>Create first order</RollingText>
+                </button>
+                <button
+                  onClick={() => onNavigateToTab('orders/new')}
+                  className="group h-9 px-4 rounded-lg bg-white hover:bg-slate-950 text-slate-700 hover:text-white text-xs font-bold transition-all duration-500 shadow-xs cursor-pointer"
+                >
+                  <RollingText compact>Try Magic Paste</RollingText>
+                </button>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-1 gap-3 p-5 sm:p-6 bg-slate-50/50">
+              {[
+                { icon: ClipboardPaste, title: 'Paste chat', desc: 'Salin format order dari WhatsApp buyer.' },
+                { icon: MessageSquare, title: 'Send updates', desc: 'Kirim reminder, invoice, atau resi via WA.' },
+                { icon: Database, title: 'Track customers', desc: 'Customer list otomatis dari order tersimpan.' },
+              ].map((item) => {
+                const Icon = item.icon;
+                return (
+                  <div key={item.title} className="rounded-xl border border-slate-100 bg-white p-3.5">
+                    <Icon className="h-4 w-4 text-emerald-600 mb-2" />
+                    <p className="text-xs font-bold text-slate-900">{item.title}</p>
+                    <p className="text-[11px] text-slate-400 mt-1 leading-normal">{item.desc}</p>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* KPI Cards Row */}
-      <div className="grid grid-cols-5 gap-3">
+      <div className="grid grid-cols-2 xl:grid-cols-5 gap-3">
         {cardStatuses.map((status) => {
           const theme = THEMES[status];
           const Icon = STATUS_ICONS[status];
@@ -487,11 +553,11 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             <button
               key={status}
               onClick={() => setActiveChartModal(status)}
-              className="p-5 premium-card text-left cursor-pointer relative overflow-hidden flex flex-col justify-between min-h-[145px] group"
+              className="p-4 sm:p-5 premium-card text-left cursor-pointer relative overflow-hidden flex flex-col justify-between min-h-[118px] sm:min-h-[145px] group"
             >
               <div>
                 {/* Top row */}
-                <div className="flex items-center justify-between text-slate-400 mb-3">
+                <div className="flex items-center justify-between text-slate-400 mb-2 sm:mb-3">
                   <div className="flex items-center gap-1.5">
                     <div className="p-1.5 rounded-lg bg-slate-50 border border-slate-100/50 group-hover:border-emerald-100 group-hover:bg-emerald-50 transition-colors">
                       <Icon className="w-3.5 h-3.5" style={{ color: theme.stroke }} />
@@ -505,8 +571,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 </div>
 
                 {/* Mid Row: Value & Trend inline */}
-                <div className="flex items-baseline gap-1.5 mt-2">
-                  <span className="text-2xl font-extrabold text-slate-900 tracking-tight font-mono">
+                <div className="flex items-baseline gap-1.5 mt-1 sm:mt-2">
+                  <span className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight font-mono">
                     <CountUpValue value={count} />
                   </span>
                   <span className={`text-[10px] font-bold flex items-center gap-0.5 ${trend.isPositive ? 'text-emerald-600' : 'text-rose-600'}`}>
@@ -516,11 +582,11 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 </div>
                 
                 {/* Desc */}
-                <p className="text-[10px] text-slate-400 font-medium mt-1">{theme.desc}</p>
+                <p className="text-[10px] text-slate-400 font-medium mt-1 line-clamp-2">{theme.desc}</p>
               </div>
 
               {/* Sparkline at bottom */}
-              <div className="mt-4 -mx-5 -mb-5 h-12 overflow-hidden rounded-b-[1.25rem]">
+              <div className="mt-3 sm:mt-4 -mx-4 sm:-mx-5 -mb-4 sm:-mb-5 h-9 sm:h-12 overflow-hidden rounded-b-[1.25rem]">
                 <Sparkline status={status} points={points} />
               </div>
             </button>

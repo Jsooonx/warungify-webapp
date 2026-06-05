@@ -11,6 +11,7 @@ export interface Order {
   notes: string;
   status: OrderStatus;
   trackingNumber?: string;
+  invoiceSentAt?: string;
   createdAt: string; // ISO String
   updatedAt: string; // ISO String
 }
@@ -38,8 +39,23 @@ export interface Profile {
   email: string;
   fullName: string;
   localOrdersImported: boolean;
+  betaStatus: 'pending' | 'approved' | 'waitlist' | 'rejected';
+  approvedBatch?: number;
+  approvedAt?: string;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface ProfileRow {
+  id: string;
+  email: string;
+  full_name: string;
+  local_orders_imported: boolean;
+  beta_status: Profile['betaStatus'];
+  approved_batch: number | null;
+  approved_at: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface OrderRow {
@@ -54,6 +70,7 @@ export interface OrderRow {
   notes: string;
   status: OrderStatus;
   tracking_number: string | null;
+  invoice_sent_at: string | null;
   created_at: string;
   updated_at: string;
 }

@@ -1,12 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
 import type { Order, OrderStatus } from '../types';
-import { ArrowLeft, Check } from 'lucide-react';
+import { ArrowLeft, Check, Copy, FileText, MessageSquare, Send } from 'lucide-react';
 import { RollingText } from './RollingText';
+import { compileInvoiceText, formatInvoiceDate, getInvoiceId } from '../lib/whatsapp';
 
 type ParsedField = 'customerName' | 'whatsappNumber' | 'productName' | 'quantity' | 'totalPrice' | 'notes';
 
 interface OrderFormViewProps {
   orderToEdit?: Order | null;
+  orders?: Order[];
   onSave: (orderData: {
     customerName: string;
     whatsappNumber: string;
@@ -16,7 +18,7 @@ interface OrderFormViewProps {
     notes: string;
     status: OrderStatus;
     trackingNumber?: string;
-  }) => void | Promise<void>;
+  }, options?: { invoiceAction?: 'copy' | 'send' }) => void | Promise<void>;
   onCancel: () => void;
   onFormatCopied: () => void;
 }
@@ -83,6 +85,7 @@ const parsePastedText = (text: string) => {
 
 export const OrderFormView: React.FC<OrderFormViewProps> = ({
   orderToEdit,
+  orders = [],
   onSave,
   onCancel,
   onFormatCopied
@@ -207,6 +210,21 @@ export const OrderFormView: React.FC<OrderFormViewProps> = ({
     flashParsedFields.includes(field) ? 'parsed-field-flash' : ''
   );
 
+  const invoicePreviewOrder: Order = {
+    id: orderToEdit?.id || 'preview',
+    orderNumber: orderToEdit?.orderNumber || 'ORD-NEW',
+    customerName: customerName.trim() || 'Customer Name',
+    whatsappNumber: whatsappNumber.trim() || '08xxxxxxxxxx',
+    productName: productName.trim() || 'Product Name',
+    quantity: Number(quantity) || 1,
+    totalPrice: Number(totalPrice) || 0,
+    notes: notes.trim(),
+    status,
+    trackingNumber: trackingNumber.trim() || undefined,
+    createdAt: orderToEdit?.createdAt || new Date().toISOString(),
+    updatedAt: orderToEdit?.updatedAt || new Date().toISOString(),
+  };
+
   // Basic validation rules
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
@@ -227,8 +245,18 @@ export const OrderFormView: React.FC<OrderFormViewProps> = ({
     };
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const getOrderData = () => ({
+    customerName: customerName.trim(),
+    whatsappNumber: whatsappNumber.trim(),
+    productName: productName.trim(),
+    quantity: Number(quantity),
+    totalPrice: Number(totalPrice),
+    notes: notes.trim(),
+    status,
+    trackingNumber: trackingNumber.trim() || undefined
+  });
+
+  const submitOrder = (options?: { invoiceAction?: 'copy' | 'send' }) => {
     const validation = validateForm();
     if (!validation.isValid) {
       const field = validation.firstErrorField;
@@ -247,21 +275,17 @@ export const OrderFormView: React.FC<OrderFormViewProps> = ({
     
     // Simulate slight save latency for smooth UX transitions
     setTimeout(() => {
-      void Promise.resolve(onSave({
-        customerName: customerName.trim(),
-        whatsappNumber: whatsappNumber.trim(),
-        productName: productName.trim(),
-        quantity: Number(quantity),
-        totalPrice: Number(totalPrice),
-        notes: notes.trim(),
-        status,
-        trackingNumber: trackingNumber.trim() || undefined
-      })).finally(() => setIsSubmitting(false));
+      void Promise.resolve(onSave(getOrderData(), options)).finally(() => setIsSubmitting(false));
     }, 400);
   };
 
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    submitOrder();
+  };
+
   return (
-    <div className="flex-1 p-8 overflow-y-auto space-y-6 select-none bg-slate-50/50 page-transition-enter">
+    <div className="flex-1 p-4 sm:p-8 overflow-y-visible lg:overflow-y-auto space-y-6 select-none bg-slate-50/50 page-transition-enter">
       {/* Back CTA Button */}
       <div className="flex items-center gap-3">
         <button
@@ -543,6 +567,72 @@ export const OrderFormView: React.FC<OrderFormViewProps> = ({
                 className="w-full h-10 px-3 border border-slate-200 bg-slate-50/50 rounded-lg text-xs font-mono transition-colors focus:bg-white focus:border-emerald-500 focus:outline-hidden"
               />
             </div>
+
+            {status === 'paid' && (
+              <div className="invoice-ready-panel rounded-xl border border-blue-200 bg-blue-50/60 p-3.5 space-y-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-start gap-2.5">
+                    <div className="mt-0.5 rounded-lg bg-white p-1.5 text-blue-600 shadow-xs">
+                      <FileText className="h-3.5 w-3.5" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold text-slate-900">Invoice ready</p>
+                      <p className="text-[10px] text-slate-500 mt-0.5 leading-normal">
+                        Save this order and immediately copy or send the invoice to buyer WhatsApp.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="rounded-lg border border-blue-100 bg-white/70 p-3 text-[10px] text-slate-600">
+                  <div className="flex items-center gap-1.5 font-bold text-slate-900 mb-2">
+                    <MessageSquare className="h-3 w-3 text-blue-600" />
+                    WhatsApp invoice preview
+                  </div>
+                  <dl className="grid grid-cols-[78px_1fr] gap-x-2 gap-y-1">
+                    <dt className="text-slate-400">Order</dt>
+                    <dd className="font-semibold text-slate-700">{invoicePreviewOrder.orderNumber}</dd>
+                    <dt className="text-slate-400">Invoice</dt>
+                    <dd className="font-semibold text-slate-700">{getInvoiceId(invoicePreviewOrder, orders)}</dd>
+                    <dt className="text-slate-400">Buyer</dt>
+                    <dd className="font-semibold text-slate-700">{invoicePreviewOrder.customerName}</dd>
+                    <dt className="text-slate-400">Product</dt>
+                    <dd className="font-semibold text-slate-700">{invoicePreviewOrder.productName} x{invoicePreviewOrder.quantity}</dd>
+                    <dt className="text-slate-400">Total</dt>
+                    <dd className="font-semibold text-slate-700">Rp {invoicePreviewOrder.totalPrice.toLocaleString('id-ID')}</dd>
+                    <dt className="text-slate-400">Date</dt>
+                    <dd className="font-semibold text-slate-700">{formatInvoiceDate(invoicePreviewOrder.createdAt)}</dd>
+                  </dl>
+                  <details className="mt-2">
+                    <summary className="cursor-pointer font-bold text-blue-700">View message text</summary>
+                    <pre className="mt-2 whitespace-pre-wrap rounded-md bg-slate-50 p-2 font-sans leading-relaxed text-slate-500">
+                      {compileInvoiceText(invoicePreviewOrder, orders)}
+                    </pre>
+                  </details>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => submitOrder({ invoiceAction: 'send' })}
+                    disabled={isSubmitting}
+                    className="group h-9 rounded-lg bg-blue-600 text-white hover:bg-white hover:text-blue-700 text-[11px] font-bold flex items-center justify-center gap-1.5 transition-all duration-500 shadow-xs cursor-pointer disabled:opacity-50 disabled:hover:bg-blue-600 disabled:hover:text-white"
+                  >
+                    <Send className="h-3.5 w-3.5 transition-transform duration-500 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+                    <RollingText compact>Send via WA</RollingText>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => submitOrder({ invoiceAction: 'copy' })}
+                    disabled={isSubmitting}
+                    className="group h-9 rounded-lg bg-white text-slate-700 hover:bg-slate-950 hover:text-white text-[11px] font-bold flex items-center justify-center gap-1.5 transition-all duration-500 shadow-xs cursor-pointer disabled:opacity-50 disabled:hover:bg-white disabled:hover:text-slate-700"
+                  >
+                    <Copy className="h-3.5 w-3.5 transition-transform duration-500 group-hover:-translate-y-0.5" />
+                    <RollingText compact>Copy text</RollingText>
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 

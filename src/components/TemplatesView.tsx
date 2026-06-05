@@ -34,7 +34,7 @@ export const TemplatesView: React.FC<TemplatesViewProps> = ({ templates, onTempl
   };
 
   return (
-    <div className="flex-1 p-8 overflow-y-auto space-y-6 select-none bg-slate-50/50 page-transition-enter">
+    <div className="flex-1 p-4 sm:p-8 overflow-y-visible lg:overflow-y-auto space-y-6 select-none bg-slate-50/50 page-transition-enter">
       
       {/* Title */}
       <div>

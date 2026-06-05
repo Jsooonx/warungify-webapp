@@ -8,6 +8,7 @@ import {
   updateCurrentUserPassword,
 } from '../services/authService';
 import { isSupabaseConfigured } from '../lib/supabaseClient';
+import { getFriendlyErrorMessage } from '../lib/errors';
 
 type AuthMode = 'login' | 'signup' | 'forgot' | 'reset';
 const PASSWORD_RECOVERY_KEY = 'warungflow_password_recovery';
@@ -118,7 +119,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess, onPassword
         setMode('login');
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Auth request failed.');
+      setError(getFriendlyErrorMessage(err, 'Auth request failed. Please check your email and password.'));
     } finally {
       setIsLoading(false);
     }

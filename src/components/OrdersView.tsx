@@ -9,9 +9,11 @@ import {
   ExternalLink,
   Check,
   Plus,
-  CalendarClock
+  CalendarClock,
+  FileText
 } from 'lucide-react';
 import { RollingText } from './RollingText';
+import { compileInvoiceText, copyInvoiceAndOpenWhatsApp, copyInvoiceText, formatWhatsAppLink } from '../lib/whatsapp';
 
 interface OrdersViewProps {
   orders: Order[];
@@ -21,6 +23,7 @@ interface OrdersViewProps {
   onDeleteOrder: (id: string) => void;
   onUpdateStatus: (id: string, status: OrderStatus) => void;
   onWhatsAppCopied: (orderId: string) => void;
+  onInvoiceCopied: (orderNumber: string, action: 'copy' | 'send', copied: boolean) => void;
   initialFilterStatus?: string;
   onFilterStatusChange?: (status: string) => void;
   lastChangedOrder?: { id: string; kind: 'create' | 'edit' | 'status' } | null;
@@ -35,6 +38,7 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
   onDeleteOrder,
   onUpdateStatus,
   onWhatsAppCopied,
+  onInvoiceCopied,
   initialFilterStatus = 'all',
   onFilterStatusChange,
   lastChangedOrder = null,
@@ -63,15 +67,6 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
     return matchesSearch && matchesStatus;
   });
 
-  // Reformat phone numbers for wa.me links (Indonesian default conversion)
-  const formatWhatsAppLink = (phone: string) => {
-    let clean = phone.replace(/[^0-9]/g, '');
-    if (clean.startsWith('0')) {
-      clean = '62' + clean.slice(1);
-    }
-    return `https://wa.me/${clean}`;
-  };
-
   // Replace template variables
   const compileTemplate = (templateBody: string, order: Order) => {
     return templateBody
@@ -97,6 +92,101 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
     });
   };
 
+  const handleInvoiceAction = async (order: Order, action: 'copy' | 'send') => {
+    const invoiceOrders = [order, ...orders.filter((item) => item.id !== order.id)];
+    if (action === 'send') {
+      const result = await copyInvoiceAndOpenWhatsApp(order, invoiceOrders);
+      setCopiedId(`${order.id}-invoice-send`);
+      setTimeout(() => setCopiedId(null), 2000);
+      onInvoiceCopied(order.orderNumber, 'send', result.copied);
+      return;
+    }
+
+    await copyInvoiceText(order, invoiceOrders);
+    setCopiedId(`${order.id}-invoice-copy`);
+    setTimeout(() => setCopiedId(null), 2000);
+    onInvoiceCopied(order.orderNumber, 'copy', true);
+  };
+
+  const renderWhatsAppMenu = (order: Order) => {
+    const invoiceOrders = [order, ...orders.filter((item) => item.id !== order.id)];
+
+    return (
+      <>
+        <p className="text-[9px] font-bold text-slate-400 px-2 py-0.5 uppercase tracking-wider">
+          Send WA Alert
+        </p>
+        <p className="px-2 pb-1 text-[10px] text-slate-400 leading-normal">
+          Message text will be copied first. Paste it in the WhatsApp chat that opens.
+        </p>
+        <div className="space-y-0.5 mt-1">
+          {order.status === 'paid' && (
+            <>
+              <button
+                onClick={() => {
+                  void handleInvoiceAction(order, 'send');
+                  setActiveWhatsAppPopover(null);
+                }}
+                title={compileInvoiceText(order, invoiceOrders)}
+                className="w-full text-left px-2.5 py-1.5 rounded-lg bg-blue-50/70 hover:bg-blue-50 text-[11px] font-semibold flex items-center justify-between group transition-colors cursor-pointer"
+              >
+                <span className="text-blue-700 group-hover:text-blue-800 flex items-center gap-1.5">
+                  <MessageSquare className="w-3 h-3" />
+                  <RollingText compact>Send invoice WA</RollingText>
+                </span>
+                {copiedId === `${order.id}-invoice-send` ? (
+                  <Check className="w-3 h-3 text-emerald-600 shrink-0" />
+                ) : (
+                  <ExternalLink className="w-3 h-3 text-blue-500 group-hover:text-blue-700 shrink-0" />
+                )}
+              </button>
+              <button
+                onClick={() => {
+                  void handleInvoiceAction(order, 'copy');
+                  setActiveWhatsAppPopover(null);
+                }}
+                title={compileInvoiceText(order, invoiceOrders)}
+                className="w-full text-left px-2.5 py-1.5 rounded-lg hover:bg-slate-50 text-[11px] font-semibold flex items-center justify-between group transition-colors cursor-pointer"
+              >
+                <span className="text-slate-700 group-hover:text-blue-700 flex items-center gap-1.5">
+                  <FileText className="w-3 h-3" />
+                  <RollingText compact>Copy invoice text</RollingText>
+                </span>
+                {copiedId === `${order.id}-invoice-copy` ? (
+                  <Check className="w-3 h-3 text-emerald-600 shrink-0" />
+                ) : (
+                  <ExternalLink className="w-3 h-3 text-slate-400 group-hover:text-blue-600 shrink-0" />
+                )}
+              </button>
+            </>
+          )}
+          {templates.map((tpl) => {
+            const isCopied = copiedId === `${order.id}-${tpl.id}`;
+            return (
+              <button
+                key={tpl.id}
+                onClick={() => {
+                  handleWhatsAppAction(tpl, order);
+                  setActiveWhatsAppPopover(null);
+                }}
+                className="w-full text-left px-2.5 py-1.5 rounded-lg hover:bg-slate-50 text-[11px] font-semibold flex items-center justify-between group transition-colors cursor-pointer"
+              >
+                <span className="text-slate-700 group-hover:text-emerald-700">
+                  <RollingText compact>{tpl.name}</RollingText>
+                </span>
+                {isCopied ? (
+                  <Check className="w-3 h-3 text-emerald-600 shrink-0" />
+                ) : (
+                  <ExternalLink className="w-3 h-3 text-slate-400 group-hover:text-emerald-600 shrink-0" />
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </>
+    );
+  };
+
   const statusStyles: Record<OrderStatus, { bg: string, text: string, label: string }> = {
     pending_payment: { bg: 'bg-amber-50 border-amber-200 text-amber-800', text: 'text-amber-800', label: 'Unpaid' },
     paid: { bg: 'bg-blue-50 border-blue-200 text-blue-800', text: 'text-blue-800', label: 'Paid' },
@@ -118,7 +208,7 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
   };
 
   return (
-    <div className="flex-1 p-8 overflow-y-auto space-y-6 select-none relative page-transition-enter">
+    <div className="flex-1 p-4 sm:p-8 overflow-y-visible lg:overflow-y-auto space-y-6 select-none relative page-transition-enter">
       {/* Header and Add Action */}
       <div className="flex items-center justify-between">
         <div>
@@ -135,8 +225,8 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
       </div>
 
       {/* Filters Toolbar */}
-      <div className="flex items-center gap-3 bg-white p-3 border border-slate-200 rounded-xl shadow-xs">
-        <div className="relative flex-1 max-w-sm">
+      <div className="flex flex-col lg:flex-row lg:items-center gap-3 bg-white p-3 border border-slate-200 rounded-xl shadow-xs">
+        <div className="relative w-full lg:flex-1 lg:max-w-sm">
           <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
           <input
             type="text"
@@ -147,7 +237,7 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
           />
         </div>
 
-        <div className="flex items-center gap-1.5 ml-auto">
+        <div className="flex w-full lg:w-auto items-center gap-1.5 lg:ml-auto overflow-x-auto pb-1 lg:pb-0">
           <Filter className="w-3.5 h-3.5 text-slate-400" />
           <span className="text-xs font-medium text-slate-500 mr-1.5">Status:</span>
           {(['all', 'pending_payment', 'paid', 'packing', 'shipped', 'done', 'cancelled'] as const).map((status) => {
@@ -173,8 +263,113 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
         </div>
       </div>
 
+      {/* Mobile Orders Cards */}
+      <div className="space-y-3 lg:hidden">
+        {filteredOrders.length === 0 ? (
+          <div className="rounded-xl border border-slate-200 bg-white p-8 text-center text-xs text-slate-400 shadow-xs">
+            No orders matching search criteria.
+          </div>
+        ) : (
+          filteredOrders.map((order) => {
+            const style = statusStyles[order.status] || { bg: 'bg-slate-50 border-slate-200 text-slate-800', label: order.status };
+            const isWAOpen = activeWhatsAppPopover === order.id;
+            const isStatusSaved = savedStatusOrderId === order.id;
+            const isHighlighted = lastChangedOrder?.id === order.id;
+            const highlightClass = isHighlighted
+              ? lastChangedOrder?.kind === 'status'
+                ? `order-row-highlight-status order-row-highlight-${order.status}`
+                : 'order-row-highlight-success'
+              : '';
+
+            return (
+              <div key={order.id} className={`rounded-xl border border-slate-200 bg-white p-4 shadow-xs space-y-3 ${highlightClass}`}>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-xs font-extrabold text-slate-950">{order.orderNumber}</p>
+                    <p className="mt-1 truncate text-sm font-bold text-slate-800">{order.customerName}</p>
+                    <p className="mt-1 flex items-center gap-1.5 text-[11px] text-slate-400">
+                      <CalendarClock className="h-3.5 w-3.5 text-slate-300" />
+                      {formatCreatedAt(order.createdAt)}
+                    </p>
+                  </div>
+                  <span className={`shrink-0 rounded-md border px-2 py-0.5 text-[10px] font-bold ${style.bg}`}>
+                    {style.label}
+                  </span>
+                </div>
+
+                <div className="rounded-lg bg-slate-50/70 p-3 text-xs">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-semibold text-slate-900 truncate">{order.productName} x{order.quantity}</span>
+                    <span className="font-mono font-bold text-slate-900">Rp{order.totalPrice.toLocaleString('id-ID')}</span>
+                  </div>
+                  <p className="mt-1 font-mono text-[11px] text-slate-500">{order.whatsappNumber}</p>
+                  {order.notes && (
+                    <p className="mt-1 truncate text-[11px] text-slate-400">Note: {order.notes}</p>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <select
+                    value={order.status}
+                    onChange={(e) => onUpdateStatus(order.id, e.target.value as OrderStatus)}
+                    className={`h-8 min-w-0 flex-1 rounded-lg border px-2 text-[10px] font-bold outline-hidden cursor-pointer ${style.bg} ${isStatusSaved ? 'status-pipeline-sweep' : ''}`}
+                  >
+                    <option value="pending_payment">Unpaid</option>
+                    <option value="paid">Paid</option>
+                    <option value="packing">Packing</option>
+                    <option value="shipped">Shipped</option>
+                    <option value="done">Done</option>
+                    <option value="cancelled">Cancelled</option>
+                  </select>
+                  {isStatusSaved && (
+                    <span className="saved-pill text-[10px] font-bold text-emerald-700">Saved</span>
+                  )}
+                </div>
+
+                <div className="flex items-center justify-end gap-1.5 relative">
+                  <div className="relative">
+                    <button
+                      onClick={() => setActiveWhatsAppPopover(isWAOpen ? null : order.id)}
+                      title="Send WhatsApp alert"
+                      className={`h-8 px-3 rounded-lg border text-[11px] font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+                        isWAOpen ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-white border-slate-200 text-slate-500'
+                      }`}
+                    >
+                      <MessageSquare className="w-3.5 h-3.5" />
+                      WA
+                    </button>
+                    {isWAOpen && (
+                      <>
+                        <div className="fixed inset-0 z-20" onClick={() => setActiveWhatsAppPopover(null)} />
+                        <div className="absolute right-0 bottom-full mb-1.5 w-60 bg-white border border-slate-200 rounded-xl shadow-lg z-30 p-1.5 text-left animate-in fade-in slide-in-from-bottom-1 duration-100">
+                          {renderWhatsAppMenu(order)}
+                        </div>
+                      </>
+                    )}
+                  </div>
+                  <button
+                    onClick={() => onEditOrderClick(order)}
+                    title="Edit order details"
+                    className="h-8 px-3 rounded-lg border border-slate-200 bg-white text-[11px] font-bold text-slate-500 cursor-pointer"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => onDeleteOrder(order.id)}
+                    title="Delete order"
+                    className="h-8 px-3 rounded-lg border border-rose-100 bg-rose-50 text-[11px] font-bold text-rose-600 cursor-pointer"
+                  >
+                    Delete
+                  </button>
+                </div>
+              </div>
+            );
+          })
+        )}
+      </div>
+
       {/* Orders Table Container */}
-      <div className="bg-white border border-slate-200 rounded-xl shadow-xs lg:overflow-visible overflow-hidden">
+      <div className="hidden bg-white border border-slate-200 rounded-xl shadow-xs lg:block lg:overflow-visible overflow-hidden">
         <div className="lg:overflow-visible overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
@@ -288,34 +483,8 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
                                   className="fixed inset-0 z-20" 
                                   onClick={() => setActiveWhatsAppPopover(null)}
                                 />
-                                <div className="absolute right-0 top-full mt-1.5 w-48 bg-white border border-slate-200 rounded-xl shadow-lg z-30 p-1.5 text-left animate-in fade-in slide-in-from-top-1 duration-100">
-                                  <p className="text-[9px] font-bold text-slate-400 px-2 py-0.5 uppercase tracking-wider">
-                                    Send WA Alert
-                                  </p>
-                                  <div className="space-y-0.5 mt-1">
-                                    {templates.map((tpl) => {
-                                      const isCopied = copiedId === `${order.id}-${tpl.id}`;
-                                      return (
-                                        <button
-                                          key={tpl.id}
-                                          onClick={() => {
-                                            handleWhatsAppAction(tpl, order);
-                                            setActiveWhatsAppPopover(null);
-                                          }}
-                                          className="w-full text-left px-2.5 py-1.5 rounded-lg hover:bg-slate-50 text-[11px] font-semibold flex items-center justify-between group transition-colors cursor-pointer"
-                                        >
-                                          <span className="text-slate-700 group-hover:text-emerald-700">
-                                            <RollingText compact>{tpl.name}</RollingText>
-                                          </span>
-                                          {isCopied ? (
-                                            <Check className="w-3 h-3 text-emerald-600 shrink-0" />
-                                          ) : (
-                                            <ExternalLink className="w-3 h-3 text-slate-400 group-hover:text-emerald-600 shrink-0" />
-                                          )}
-                                        </button>
-                                      );
-                                    })}
-                                  </div>
+                                <div className="absolute right-0 top-full mt-1.5 w-60 bg-white border border-slate-200 rounded-xl shadow-lg z-30 p-1.5 text-left animate-in fade-in slide-in-from-top-1 duration-100">
+                                  {renderWhatsAppMenu(order)}
                                 </div>
                               </>
                             )}

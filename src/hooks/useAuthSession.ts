@@ -1,13 +1,17 @@
 import { useEffect, useState } from 'react';
 import type { Session, User } from '@supabase/supabase-js';
 import { supabase, isSupabaseConfigured } from '../lib/supabaseClient';
+import type { Profile } from '../types';
+import { fetchProfile } from '../services/profileService';
 
 const PASSWORD_RECOVERY_KEY = 'warungflow_password_recovery';
 
 export const useAuthSession = () => {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
+  const [isProfileLoading, setIsProfileLoading] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
   const [isPasswordRecovery, setIsPasswordRecovery] = useState(() => {
     return sessionStorage.getItem(PASSWORD_RECOVERY_KEY) === 'true';
@@ -41,7 +45,35 @@ export const useAuthSession = () => {
       setIsAuthLoading(false);
     };
 
-    supabase.auth.getSession().then(({ data, error }) => {
+    const syncSession = async (nextSession: Session | null) => {
+      const nextUser = nextSession?.user || null;
+      setSession(nextSession);
+      setUser(nextUser);
+
+      if (!nextUser) {
+        setProfile(null);
+        setIsProfileLoading(false);
+        return;
+      }
+
+      setIsProfileLoading(true);
+      try {
+        const nextProfile = await fetchProfile(nextUser.id);
+        if (!isMounted) return;
+        setProfile(nextProfile);
+        setAuthError(null);
+      } catch (error) {
+        if (!isMounted) return;
+        setProfile(null);
+        setAuthError(error instanceof Error ? error.message : 'Failed to load workspace profile.');
+      } finally {
+        if (isMounted) {
+          setIsProfileLoading(false);
+        }
+      }
+    };
+
+    supabase.auth.getSession().then(async ({ data, error }) => {
       if (!isMounted) return;
       if (error) {
         setAuthError(error.message);
@@ -50,8 +82,7 @@ export const useAuthSession = () => {
         void finishEmailConfirmRedirect();
         return;
       }
-      setSession(data.session);
-      setUser(data.session?.user || null);
+      await syncSession(data.session);
       setIsAuthLoading(false);
     });
 
@@ -64,6 +95,8 @@ export const useAuthSession = () => {
       if (event === 'SIGNED_OUT') {
         setSession(null);
         setUser(null);
+        setProfile(null);
+        setIsProfileLoading(false);
         setIsAuthLoading(false);
         return;
       }
@@ -71,8 +104,7 @@ export const useAuthSession = () => {
         void finishEmailConfirmRedirect();
         return;
       }
-      setSession(nextSession);
-      setUser(nextSession?.user || null);
+      void syncSession(nextSession);
       setIsAuthLoading(false);
     });
 
@@ -85,13 +117,16 @@ export const useAuthSession = () => {
   return {
     session,
     user,
+    profile,
     isAuthenticated: Boolean(session?.user),
+    isApproved: profile?.betaStatus === 'approved',
     isPasswordRecovery,
     clearPasswordRecovery: () => {
       sessionStorage.removeItem(PASSWORD_RECOVERY_KEY);
       setIsPasswordRecovery(false);
     },
     isAuthLoading,
+    isProfileLoading,
     authError,
   };
 };
