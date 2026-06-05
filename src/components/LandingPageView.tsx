@@ -54,6 +54,36 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onGetStartedCl
     return () => clearInterval(timer);
   }, [activeTab]);
 
+  // Scroll reveal Intersection Observer
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('revealed');
+          }
+        });
+      },
+      { threshold: 0.08, rootMargin: '0px 0px -40px 0px' }
+    );
+
+    const elements = document.querySelectorAll('.reveal-on-scroll');
+    elements.forEach((el) => observer.observe(el));
+
+    return () => {
+      elements.forEach((el) => observer.unobserve(el));
+    };
+  }, []);
+
+  const handleCardMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width) * 100;
+    const y = e.clientY - rect.top;
+    const percentY = (y / rect.height) * 100;
+    e.currentTarget.style.setProperty('--mouse-x', `${x}%`);
+    e.currentTarget.style.setProperty('--mouse-y', `${percentY}%`);
+  };
+
   const dict = {
     id: {
       features: 'Fitur',
@@ -330,8 +360,12 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onGetStartedCl
     </div>
 
       {/* Feature Section */}
-      <section id="features" className="py-24 bg-slate-50/50 border-t border-slate-100">
-        <div className="max-w-6xl mx-auto px-6 sm:px-12 space-y-12">
+      <section id="features" className="py-24 bg-slate-50/50 border-t border-slate-100 relative overflow-hidden">
+        {/* Subtle mesh background accent */}
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-emerald-500/5 rounded-full filter blur-[100px] pointer-events-none" />
+        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-emerald-500/5 rounded-full filter blur-[100px] pointer-events-none" />
+        
+        <div className="max-w-6xl mx-auto px-6 sm:px-12 space-y-12 relative z-10">
           
           {/* Section Header */}
           <div className="text-center space-y-3">
@@ -348,15 +382,33 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onGetStartedCl
           <div className="grid grid-cols-1 md:grid-cols-6 gap-6">
             
             {/* 1. Large Analytics Card (col-span-4) */}
-            <div className="md:col-span-4 bg-white border border-slate-200/80 rounded-2xl p-6 flex flex-col justify-between shadow-sm hover:shadow-md transition-shadow group overflow-hidden">
-              <div className="h-64 rounded-xl bg-slate-50/50 border border-slate-100 overflow-hidden relative flex items-center justify-center p-2 mb-6">
+            <div 
+              onMouseMove={handleCardMouseMove}
+              style={{ transitionDelay: '0ms' }}
+              className="reveal-on-scroll bento-feature-card md:col-span-4 bg-white border border-slate-200/80 rounded-2xl p-6 flex flex-col justify-between shadow-xs group overflow-hidden relative"
+            >
+              <div className="bento-glow-bg" />
+              <div className="h-64 rounded-xl bg-slate-50/50 border border-slate-100/80 overflow-hidden relative flex items-center justify-center p-2 mb-6 z-10">
                 <img 
                   src={dashboardImg} 
                   alt="Dashboard Analytics" 
-                  className="w-full h-full object-cover object-[center_10%] rounded-lg border border-slate-200/50 shadow-xs transition-transform duration-500 group-hover:scale-[1.02]"
+                  className="w-full h-full object-cover object-[center_10%] rounded-lg border border-slate-200/50 shadow-xs transition-all duration-700 group-hover:scale-[1.03] group-hover:-translate-y-1"
                 />
+                {/* Floating Micro-interaction Widget */}
+                <div className="absolute bottom-4 right-4 bg-white/95 backdrop-blur-md border border-slate-200/60 p-2.5 rounded-xl shadow-lg flex items-center gap-3 animate-float-1 group-hover:translate-y-[-6px] group-hover:translate-x-[-4px] transition-transform duration-500 z-20">
+                  <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 flex items-center justify-center">
+                    <span className="dot-pulse" />
+                  </div>
+                  <div className="text-[10px] font-bold text-slate-800 flex flex-col">
+                    <span className="text-slate-400 font-semibold leading-tight">Konversi</span>
+                    <span className="text-emerald-600 font-extrabold leading-none">+24.8% hari ini</span>
+                  </div>
+                </div>
               </div>
-              <div className="space-y-2">
+              <div className="space-y-2 z-10">
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 text-[9px] font-extrabold uppercase tracking-wider">
+                  Analitik Real-time
+                </span>
                 <h3 className="text-sm font-bold text-slate-900">{t.card1Title}</h3>
                 <p className="text-xs text-slate-500 leading-relaxed">
                   {t.card1Desc}
@@ -365,15 +417,31 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onGetStartedCl
             </div>
 
             {/* 2. Small Follow-up Card (col-span-2) */}
-            <div className="md:col-span-2 bg-white border border-slate-200/80 rounded-2xl p-6 flex flex-col justify-between shadow-sm hover:shadow-md transition-shadow group overflow-hidden">
-              <div className="h-64 rounded-xl bg-slate-50/50 border border-slate-100 overflow-hidden relative flex items-center justify-center p-2 mb-6">
+            <div 
+              onMouseMove={handleCardMouseMove}
+              style={{ transitionDelay: '100ms' }}
+              className="reveal-on-scroll bento-feature-card md:col-span-2 bg-white border border-slate-200/80 rounded-2xl p-6 flex flex-col justify-between shadow-xs group overflow-hidden relative"
+            >
+              <div className="bento-glow-bg" />
+              <div className="h-64 rounded-xl bg-slate-50/50 border border-slate-100/80 overflow-hidden relative flex items-center justify-center p-2 mb-6 z-10">
                 <img 
                   src={whatsappFollowUpImg} 
                   alt="WhatsApp Follow up" 
-                  className="w-full h-full object-cover object-[70%_center] rounded-lg border border-slate-200/50 shadow-xs transition-transform duration-500 group-hover:scale-[1.02]"
+                  className="w-full h-full object-cover object-[70%_center] rounded-lg border border-slate-200/50 shadow-xs transition-all duration-700 group-hover:scale-[1.03] group-hover:-translate-y-1"
                 />
+                {/* Floating WhatsApp Message Pop */}
+                <div className="absolute bottom-6 left-6 bg-white/95 backdrop-blur-md border border-slate-200/60 p-2.5 rounded-xl shadow-lg flex items-center gap-2.5 animate-float-2 group-hover:translate-y-[-8px] transition-transform duration-500 z-20">
+                  <div className="w-6 h-6 rounded-full bg-emerald-500 flex items-center justify-center text-white text-[10px] font-extrabold">WA</div>
+                  <div className="text-[9px] font-bold text-slate-800 flex flex-col">
+                    <span className="text-slate-400 font-semibold leading-tight">Ke Pelanggan</span>
+                    <span className="text-slate-900 font-extrabold leading-none">Follow-up Terkirim! ✓✓</span>
+                  </div>
+                </div>
               </div>
-              <div className="space-y-2">
+              <div className="space-y-2 z-10">
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-green-50 text-green-700 text-[9px] font-extrabold uppercase tracking-wider">
+                  WhatsApp Follow-up
+                </span>
                 <h3 className="text-sm font-bold text-slate-900">{t.card2Title}</h3>
                 <p className="text-xs text-slate-500 leading-relaxed">
                   {t.card2Desc}
@@ -382,15 +450,28 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onGetStartedCl
             </div>
 
             {/* 3. Small Log Card (col-span-2) */}
-            <div className="md:col-span-2 bg-white border border-slate-200/80 rounded-2xl p-6 flex flex-col justify-between shadow-sm hover:shadow-md transition-shadow group overflow-hidden">
-              <div className="h-48 rounded-xl bg-slate-50/50 border border-slate-100 overflow-hidden relative flex items-center justify-center p-2 mb-6">
+            <div 
+              onMouseMove={handleCardMouseMove}
+              style={{ transitionDelay: '150ms' }}
+              className="reveal-on-scroll bento-feature-card md:col-span-2 bg-white border border-slate-200/80 rounded-2xl p-6 flex flex-col justify-between shadow-xs group overflow-hidden relative"
+            >
+              <div className="bento-glow-bg" />
+              <div className="h-48 rounded-xl bg-slate-50/50 border border-slate-100/80 overflow-hidden relative flex items-center justify-center p-2 mb-6 z-10">
                 <img 
                   src={ordersImg} 
                   alt="Order Logs Table" 
-                  className="w-full h-full object-cover object-[35%_center] rounded-lg border border-slate-200/50 shadow-xs transition-transform duration-500 group-hover:scale-[1.02]"
+                  className="w-full h-full object-cover object-[35%_center] rounded-lg border border-slate-200/50 shadow-xs transition-all duration-700 group-hover:scale-[1.03] group-hover:-translate-y-1"
                 />
+                {/* Floating Status Dropdown Widget */}
+                <div className="absolute top-4 right-4 bg-white/95 backdrop-blur-md border border-slate-200/60 px-2 py-1.5 rounded-lg shadow-lg flex items-center gap-2 animate-float-1 group-hover:translate-x-[-4px] transition-transform duration-500 z-20">
+                  <span className="w-1.5 h-1.5 rounded-full bg-sky-500 animate-pulse" />
+                  <span className="text-[9px] font-extrabold text-slate-700">Status: Packing</span>
+                </div>
               </div>
-              <div className="space-y-2">
+              <div className="space-y-2 z-10">
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-sky-50 text-sky-700 text-[9px] font-extrabold uppercase tracking-wider">
+                  Spreadsheet Log
+                </span>
                 <h3 className="text-sm font-bold text-slate-900">{t.card3Title}</h3>
                 <p className="text-xs text-slate-500 leading-relaxed">
                   {t.card3Desc}
@@ -399,15 +480,28 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onGetStartedCl
             </div>
 
             {/* 4. Small Template Card (col-span-2) */}
-            <div className="md:col-span-2 bg-white border border-slate-200/80 rounded-2xl p-6 flex flex-col justify-between shadow-sm hover:shadow-md transition-shadow group overflow-hidden">
-              <div className="h-48 rounded-xl bg-slate-50/50 border border-slate-100 overflow-hidden relative flex items-center justify-center p-2 mb-6">
+            <div 
+              onMouseMove={handleCardMouseMove}
+              style={{ transitionDelay: '200ms' }}
+              className="reveal-on-scroll bento-feature-card md:col-span-2 bg-white border border-slate-200/80 rounded-2xl p-6 flex flex-col justify-between shadow-xs group overflow-hidden relative"
+            >
+              <div className="bento-glow-bg" />
+              <div className="h-48 rounded-xl bg-slate-50/50 border border-slate-100/80 overflow-hidden relative flex items-center justify-center p-2 mb-6 z-10">
                 <img 
                   src={templatesImg} 
                   alt="WhatsApp Templates" 
-                  className="w-full h-full object-cover object-[center_35%] rounded-lg border border-slate-200/50 shadow-xs transition-transform duration-500 group-hover:scale-[1.02]"
+                  className="w-full h-full object-cover object-[center_35%] rounded-lg border border-slate-200/50 shadow-xs transition-all duration-700 group-hover:scale-[1.03] group-hover:-translate-y-1"
                 />
+                {/* Floating Variable Tags */}
+                <div className="absolute bottom-4 right-4 flex gap-1.5 animate-float-2 z-20">
+                  <span className="bg-amber-100/90 text-amber-800 border border-amber-200/60 text-[8px] font-extrabold px-1.5 py-0.5 rounded">{`{nama}`}</span>
+                  <span className="bg-slate-900/90 text-white border border-slate-800 text-[8px] font-extrabold px-1.5 py-0.5 rounded">{`{total}`}</span>
+                </div>
               </div>
-              <div className="space-y-2">
+              <div className="space-y-2 z-10">
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-amber-50 text-amber-700 text-[9px] font-extrabold uppercase tracking-wider">
+                  Template Fleksibel
+                </span>
                 <h3 className="text-sm font-bold text-slate-900">{t.card4Title}</h3>
                 <p className="text-xs text-slate-500 leading-relaxed">
                   {t.card4Desc}
@@ -416,15 +510,28 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onGetStartedCl
             </div>
 
             {/* 5. Small Customer Card (col-span-2) */}
-            <div className="md:col-span-2 bg-white border border-slate-200/80 rounded-2xl p-6 flex flex-col justify-between shadow-sm hover:shadow-md transition-shadow group overflow-hidden">
-              <div className="h-48 rounded-xl bg-slate-50/50 border border-slate-100 overflow-hidden relative flex items-center justify-center p-2 mb-6">
+            <div 
+              onMouseMove={handleCardMouseMove}
+              style={{ transitionDelay: '250ms' }}
+              className="reveal-on-scroll bento-feature-card md:col-span-2 bg-white border border-slate-200/80 rounded-2xl p-6 flex flex-col justify-between shadow-xs group overflow-hidden relative"
+            >
+              <div className="bento-glow-bg" />
+              <div className="h-48 rounded-xl bg-slate-50/50 border border-slate-100/80 overflow-hidden relative flex items-center justify-center p-2 mb-6 z-10">
                 <img 
                   src={customersImg} 
                   alt="Customer Management" 
-                  className="w-full h-full object-cover object-[25%_center] rounded-lg border border-slate-200/50 shadow-xs transition-transform duration-500 group-hover:scale-[1.02]"
+                  className="w-full h-full object-cover object-[25%_center] rounded-lg border border-slate-200/50 shadow-xs transition-all duration-700 group-hover:scale-[1.03] group-hover:-translate-y-1"
                 />
+                {/* Floating VIP Tag */}
+                <div className="absolute bottom-4 left-4 bg-white/95 backdrop-blur-md border border-slate-200/60 px-2 py-1.5 rounded-xl shadow-lg flex items-center gap-1.5 animate-float-1 group-hover:translate-y-[-4px] transition-transform duration-500 z-20">
+                  <span className="text-[10px]">⭐</span>
+                  <span className="text-[9px] font-extrabold text-purple-700">Pelanggan VIP</span>
+                </div>
               </div>
-              <div className="space-y-2">
+              <div className="space-y-2 z-10">
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-purple-50 text-purple-700 text-[9px] font-extrabold uppercase tracking-wider">
+                  Manajemen Pelanggan
+                </span>
                 <h3 className="text-sm font-bold text-slate-900">{t.card5Title}</h3>
                 <p className="text-xs text-slate-500 leading-relaxed">
                   {t.card5Desc}

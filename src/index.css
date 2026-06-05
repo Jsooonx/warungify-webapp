@@ -816,3 +816,88 @@ html.lenis, html.lenis body {
 .lenis-scrolling iframe {
   pointer-events: none;
 }
+
+/* Bento Grid Enhancements & Scroll Reveal */
+.reveal-on-scroll {
+  opacity: 0;
+  transform: translateY(30px) scale(1);
+  will-change: opacity, transform;
+}
+
+.reveal-on-scroll.revealed {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+.bento-feature-card {
+  transition: opacity 0.85s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.6s cubic-bezier(0.25, 1, 0.5, 1),
+              box-shadow 0.6s cubic-bezier(0.25, 1, 0.5, 1),
+              border-color 0.6s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+.bento-feature-card:hover {
+  transform: translateY(-4px) scale(1.015) !important;
+  border-color: rgba(16, 185, 129, 0.35) !important;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05) !important;
+}
+
+
+/* Float Animations for Mockup Badges */
+@keyframes float-badge-1 {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-8px) rotate(1deg); }
+}
+
+@keyframes float-badge-2 {
+  0%, 100% { transform: translateY(0) rotate(-1deg); }
+  50% { transform: translateY(-12px) rotate(2deg); }
+}
+
+.animate-float-1 {
+  animation: float-badge-1 5s ease-in-out infinite;
+}
+
+.animate-float-2 {
+  animation: float-badge-2 6.5s ease-in-out infinite;
+}
+
+/* Glassmorphism gradient accents */
+.bento-glow-bg {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(16, 185, 129, 0.08), transparent 45%);
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.group:hover .bento-glow-bg {
+  opacity: 1;
+}
+
+/* Pulse indicator for live demo previews */
+.dot-pulse {
+  position: relative;
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: #10b981;
+}
+
+.dot-pulse::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background-color: #10b981;
+  animation: pulse-ring 1.8s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+}
+
+@keyframes pulse-ring {
+  0% { transform: scale(0.95); opacity: 0.65; }
+  100% { transform: scale(3.5); opacity: 0; }
+}
+
