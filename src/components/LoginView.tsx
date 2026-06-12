@@ -19,6 +19,7 @@ interface LoginViewProps {
   onBackToLanding: () => void;
   lang: 'id' | 'en';
   setLang: (lang: 'id' | 'en') => void;
+  onDemoClick: () => void;
 }
 
 export const LoginView: React.FC<LoginViewProps> = ({ 
@@ -27,6 +28,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
   onBackToLanding,
   lang,
   setLang,
+  onDemoClick,
 }) => {
   const initialMode = useMemo<AuthMode>(() => (
     window.location.hash.includes('mode=reset') || sessionStorage.getItem(PASSWORD_RECOVERY_KEY) === 'true' ? 'reset' : 'login'
@@ -340,6 +342,17 @@ export const LoginView: React.FC<LoginViewProps> = ({
                 </>
               )}
             </button>
+
+            {isLogin && (
+              <button
+                type="button"
+                onClick={onDemoClick}
+                disabled={isLoading}
+                className="group w-full h-10 rounded-xl border border-slate-200 hover:border-slate-800 bg-white hover:bg-slate-50 text-slate-700 hover:text-slate-950 text-xs font-semibold flex items-center justify-center gap-2 transition-all duration-300 cursor-pointer shadow-xs disabled:opacity-50"
+              >
+                <RollingText>{lang === 'id' ? 'Coba Demo Dasbor (Tanpa Login)' : 'Try Dashboard Demo (No Login)'}</RollingText>
+              </button>
+            )}
           </form>
 
           <div className="border-t border-slate-100 pt-4 flex flex-wrap items-center justify-center gap-3 text-[11px] font-bold">

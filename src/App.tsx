@@ -164,6 +164,18 @@ const MobileAppShell = ({
   );
 };
 
+const DEMO_USER = {
+  id: 'demo-user',
+  email: 'demo@warungify.app',
+  user_metadata: { full_name: 'Demo Owner' }
+};
+
+const DEMO_PROFILE = {
+  id: 'demo-user',
+  fullName: 'Demo Owner',
+  betaStatus: 'approved'
+};
+
 function App() {
 
   const {
@@ -178,6 +190,16 @@ function App() {
     authError,
   } = useAuthSession();
 
+  const [isDemoMode, setIsDemoMode] = useState(() => {
+    return localStorage.getItem('warungify_demo_mode') === 'true';
+  });
+
+  const effectiveUser = isDemoMode ? (DEMO_USER as any) : user;
+  const effectiveProfile = isDemoMode ? (DEMO_PROFILE as any) : profile;
+
+  const effectiveIsAuthenticated = isAuthenticated || isDemoMode;
+  const effectiveIsApproved = isApproved || isDemoMode;
+
   const {
     orders,
     customers,
@@ -190,7 +212,7 @@ function App() {
     deleteOrder,
     importLocalOrders,
     dismissLocalImport,
-  } = useAppState(isApproved ? user : null);
+  } = useAppState(effectiveIsApproved ? effectiveUser : null);
 
   const { path, params, navigate } = useHashRouter();
   const isPasswordResetRoute = (path === 'login' && window.location.hash.includes('mode=reset')) || isPasswordRecovery;
@@ -252,14 +274,14 @@ function App() {
   }, []);
 
   useEffect(() => {
-    if (!user?.id) {
+    if (!effectiveUser?.id) {
       setLocalInvoiceHandledOrderIds([]);
       return;
     }
 
-    const saved = localStorage.getItem(`warungify_invoice_handled_${user.id}`);
+    const saved = localStorage.getItem(`warungify_invoice_handled_${effectiveUser.id}`);
     setLocalInvoiceHandledOrderIds(saved ? JSON.parse(saved) as string[] : []);
-  }, [user?.id]);
+  }, [effectiveUser?.id]);
 
   const invoiceHandledOrderIds = useMemo(() => {
     const remoteHandled = orders
@@ -269,10 +291,10 @@ function App() {
   }, [localInvoiceHandledOrderIds, orders]);
 
   const markInvoiceHandled = useCallback(async (orderId: string) => {
-    if (!user?.id) return;
+    if (!effectiveUser?.id) return;
     setLocalInvoiceHandledOrderIds((prev) => {
       const next = Array.from(new Set([...prev, orderId]));
-      localStorage.setItem(`warungify_invoice_handled_${user.id}`, JSON.stringify(next));
+      localStorage.setItem(`warungify_invoice_handled_${effectiveUser.id}`, JSON.stringify(next));
       return next;
     });
     try {
@@ -280,7 +302,7 @@ function App() {
     } catch {
       // Local fallback keeps invoice reminders usable before the Supabase schema is migrated.
     }
-  }, [updateOrder, user?.id]);
+  }, [updateOrder, effectiveUser?.id]);
 
   const navigateWithLoading = useCallback((
     nextPath: string,
@@ -294,28 +316,28 @@ function App() {
 
   // Redirect authenticated users away from landing/login pages to dashboard
   useEffect(() => {
-    if (!isLoggingOut && isAuthenticated && (path === 'landing' || (path === 'login' && !isPasswordResetRoute))) {
+    if (!isLoggingOut && effectiveIsAuthenticated && (path === 'landing' || (path === 'login' && !isPasswordResetRoute))) {
       startPageLoading(() => {
         loaderNavigationRef.current = true;
         navigate('dashboard');
       });
     }
-  }, [isAuthenticated, isLoggingOut, isPasswordResetRoute, path, navigate, startPageLoading]);
+  }, [effectiveIsAuthenticated, isLoggingOut, isPasswordResetRoute, path, navigate, startPageLoading]);
 
   useEffect(() => {
     const publicPaths = new Set(['landing', 'login']);
-    if (!isLoggingOut && !isAuthLoading && !isAuthenticated && !publicPaths.has(path)) {
+    if (!isLoggingOut && !isAuthLoading && !effectiveIsAuthenticated && !publicPaths.has(path)) {
       loaderNavigationRef.current = true;
       navigate('login');
     }
-  }, [isAuthLoading, isAuthenticated, isLoggingOut, navigate, path]);
+  }, [isAuthLoading, effectiveIsAuthenticated, isLoggingOut, navigate, path]);
 
   useEffect(() => {
     const previousPath = previousPathRef.current;
     const didPathChange = previousPath !== path;
     const authShellPaths = new Set(['landing', 'login']);
     const isAuthShellBackForward =
-      !isAuthenticated &&
+      !effectiveIsAuthenticated &&
       authShellPaths.has(previousPath) &&
       authShellPaths.has(path);
 
@@ -330,7 +352,7 @@ function App() {
     }
 
     previousPathRef.current = path;
-  }, [isAuthenticated, isPageLoading, path, startPageLoading]);
+  }, [effectiveIsAuthenticated, isPageLoading, path, startPageLoading]);
 
   const activeTab = path.startsWith('orders') ? 'orders' : path;
   const ordersFilterStatus = params.status || 'all';
@@ -339,13 +361,13 @@ function App() {
     ? (orders.find((o) => o.id === params.id) || null)
     : null;
   const displayName = (
-    profile?.fullName?.trim()
-      ? profile.fullName.trim()
-      : typeof user?.user_metadata?.full_name === 'string' && user.user_metadata.full_name.trim()
-      ? user.user_metadata.full_name.trim()
-      : user?.email?.split('@')[0]
+    effectiveProfile?.fullName?.trim()
+      ? effectiveProfile.fullName.trim()
+      : typeof effectiveUser?.user_metadata?.full_name === 'string' && effectiveUser.user_metadata.full_name.trim()
+      ? effectiveUser.user_metadata.full_name.trim()
+      : effectiveUser?.email?.split('@')[0]
   ) || (lang === 'id' ? 'Pengguna Workspace' : 'Workspace User');
-  const displayEmail = user?.email || (lang === 'id' ? 'Akun aktif' : 'Account active');
+  const displayEmail = effectiveUser?.email || (lang === 'id' ? 'Akun aktif' : 'Account active');
 
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [lastChangedOrder, setLastChangedOrder] = useState<{ id: string; kind: ChangeKind } | null>(null);
@@ -388,7 +410,22 @@ function App() {
     }, 1500);
   }, []);
 
+  const handleTryDemo = () => {
+    setIsDemoMode(true);
+    localStorage.setItem('warungify_demo_mode', 'true');
+    showToast(
+      lang === 'id' ? 'Masuk Mode Demo' : 'Entered Demo Mode',
+      lang === 'id' ? 'Selamat mencoba! Anda dapat menguji semua fitur tanpa login.' : 'Enjoy! You can test all features without logging in.'
+    );
+    startPageLoading(() => {
+      loaderNavigationRef.current = true;
+      navigate('dashboard');
+    });
+  };
+
   const handleLoginSuccess = (email: string) => {
+    setIsDemoMode(false);
+    localStorage.removeItem('warungify_demo_mode');
     showToast(lang === 'id' ? 'Login berhasil' : 'Login successful', lang === 'id' ? `Selamat datang kembali, ${email}!` : `Welcome back, ${email}!`);
     startPageLoading(() => {
       loaderNavigationRef.current = true;
@@ -399,6 +436,16 @@ function App() {
   const handleLogout = async () => {
     const confirmed = window.confirm(lang === 'id' ? 'Apakah Anda yakin ingin keluar dari workspace?' : 'Are you sure you want to log out of the workspace?');
     if (confirmed) {
+      if (isDemoMode) {
+        setIsDemoMode(false);
+        localStorage.removeItem('warungify_demo_mode');
+        showToast(lang === 'id' ? 'Keluar dari Mode Demo' : 'Exited Demo Mode');
+        startPageLoading(() => {
+          loaderNavigationRef.current = true;
+          navigate('login');
+        });
+        return;
+      }
       setIsLoggingOut(true);
       startPageLoading(() => {
         void signOut()
@@ -653,7 +700,7 @@ function App() {
     return <PageLoadingScreen />;
   }
 
-  const shouldShowPublicShell = !isAuthenticated || isPasswordResetRoute || isLoggingOut;
+  const shouldShowPublicShell = !effectiveIsAuthenticated || isPasswordResetRoute || isLoggingOut;
 
   const appContent = shouldShowPublicShell ? (
     path === 'login' ? (
@@ -663,6 +710,7 @@ function App() {
         onBackToLanding={() => navigateWithLoading('landing')}
         lang={lang}
         setLang={handleSetLang}
+        onDemoClick={handleTryDemo}
       />
     ) : (
       <LandingPageView
@@ -672,9 +720,9 @@ function App() {
         setLang={handleSetLang}
       />
     )
-  ) : !isApproved ? (
+  ) : !effectiveIsApproved ? (
     <PendingApprovalView
-      profile={profile}
+      profile={effectiveProfile}
       userEmail={displayEmail}
       onLogout={handleLogout}
       lang={lang}
