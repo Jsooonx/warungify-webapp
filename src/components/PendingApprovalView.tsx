@@ -45,7 +45,7 @@ export const PendingApprovalView: React.FC<PendingApprovalViewProps> = ({
       <div className="w-full max-w-xl rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 shadow-xl shadow-slate-900/6">
         <div className="flex items-start justify-between gap-4">
           <div className="flex items-center gap-3">
-            <img src="/Logo-warungify.png" alt="Warungify Logo" className="h-11 w-11 rounded-2xl object-contain" />
+            <img src="/logo_warungify_upgrade.png" alt="Warungify Logo" className="h-11 w-11 rounded-2xl object-contain" />
             <div>
               <p className="text-lg font-extrabold text-slate-950 leading-none">Warungify</p>
               <p className="mt-1 text-[10px] font-bold uppercase tracking-[0.18em] text-emerald-600">Beta Access</p>

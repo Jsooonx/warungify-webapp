@@ -110,7 +110,7 @@ const MobileAppShell = ({
     <div className="lg:hidden flex h-screen w-screen flex-col overflow-hidden bg-slate-50">
       <header className="h-14 shrink-0 border-b border-slate-200 bg-white px-4 flex items-center justify-between">
         <div className="flex items-center gap-2.5 min-w-0">
-          <img src="/Logo-warungify.png" alt="Warungify Logo" className="h-8 w-8 rounded-lg object-contain" />
+          <img src="/logo_warungify_upgrade.png" alt="Warungify Logo" className="h-8 w-8 rounded-lg object-contain" />
           <div className="min-w-0">
             <p className="text-sm font-extrabold text-slate-900 leading-none">Warungify</p>
             <p className="mt-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 truncate">{userName}</p>

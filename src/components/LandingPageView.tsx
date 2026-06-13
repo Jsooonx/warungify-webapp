@@ -257,7 +257,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
         {/* Logo container */}
         <div className="hero-nav-logo flex items-center pl-0.5 flex-shrink-0">
           <img 
-            src="/Logo-warungify.png" 
+            src="/logo_warungify_upgrade.png" 
             alt="Warungify Logo" 
             className="w-8 h-8 object-contain rounded-lg" 
           />
@@ -824,7 +824,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-400 font-medium">
             <div className="flex items-center gap-3">
               <img 
-                src="/Logo-warungify.png" 
+                src="/logo_warungify_upgrade.png" 
                 alt="Warungify Logo" 
                 className="w-6 h-6 object-contain rounded-md" 
               />

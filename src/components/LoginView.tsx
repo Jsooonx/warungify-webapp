@@ -145,7 +145,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
         <div className="max-w-md relative z-10 space-y-8">
           <div className="flex items-center gap-3">
             <img
-              src="/Logo-warungify.png"
+              src="/logo_warungify_upgrade.png"
               alt="Warungify Logo"
               className="w-12 h-12 object-contain rounded-2xl"
             />

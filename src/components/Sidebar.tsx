@@ -45,7 +45,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       <div className="h-16 px-6 border-b border-slate-100 flex items-center justify-between">
         <div className="flex items-center gap-2.5">
           <img 
-            src="/Logo-warungify.png" 
+            src="/logo_warungify_upgrade.png" 
             alt="Warungify Logo" 
             className="w-8 h-8 object-contain rounded-lg" 
           />
